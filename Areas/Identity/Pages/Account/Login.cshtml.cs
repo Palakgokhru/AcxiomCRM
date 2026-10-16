@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using AcxiomCRM.Data;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -10,7 +11,7 @@ namespace AcxiomCRM.Areas.Identity.Pages.Account;
 // Overrides the default Identity UI login so failed attempts count towards lockout
 // and a successful sign-in lands on the Dashboard.
 [AllowAnonymous]
-public class LoginModel(SignInManager<IdentityUser> signInManager, ILogger<LoginModel> logger) : PageModel
+public class LoginModel(SignInManager<IdentityUser> signInManager, ApplicationDbContext db, ILogger<LoginModel> logger) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
@@ -42,6 +43,13 @@ public class LoginModel(SignInManager<IdentityUser> signInManager, ILogger<Login
             return Page();
 
         var result = await signInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+        // Audit the attempt: email only, never the password.
+        var auditAction = result.Succeeded ? "LoginSuccess" : result.IsLockedOut ? "LoginLockedOut" : "LoginFailed";
+        var user = await signInManager.UserManager.FindByEmailAsync(Input.Email);
+        db.Audit(Input.Email, auditAction, "Account", user?.Id ?? "-");
+        if (user is not null) db.AuditLogs.Local.Last().UserId = user.Id;
+        await db.SaveChangesAsync();
+
         if (result.Succeeded)
         {
             logger.LogInformation("User {Email} logged in.", Input.Email);

@@ -4,7 +4,7 @@
 }
 
 <h1 class="h3 mb-3">Audit Log</h1>
-<p class="text-muted small">Most recent 500 entries. Times are UTC.</p>
+<p class="text-muted small">Most recent 500 entries. Times are UTC. Passwords and security tokens are never logged.</p>
 
 @if (!Model.Any())
 {
@@ -13,14 +13,22 @@
 else
 {
     <div class="table-responsive">
-        <table class="table table-sm bg-white">
-            <thead class="table-light"><tr><th>When (UTC)</th><th>User</th><th>Action</th><th>Entity</th><th>Id</th><th>Details</th></tr></thead>
+        <table class="table table-sm bg-white small align-top">
+            <thead class="table-light">
+                <tr><th>When (UTC)</th><th>User</th><th>Action</th><th>Entity</th><th>Record</th><th>Old value</th><th>New value</th><th>IP</th></tr>
+            </thead>
             <tbody>
                 @foreach (var a in Model)
                 {
-                    <tr>
-                        <td class="text-nowrap">@a.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                        <td>@a.UserName</td><td>@a.Action</td><td>@a.Entity</td><td>@a.EntityId</td><td>@a.Details</td>
+                    <tr class="@(a.Action is "LoginFailed" or "LoginLockedOut" ? "table-warning" : "")">
+                        <td class="text-nowrap">@a.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@a.UserName<div class="text-muted" style="font-size:.7rem">@a.UserId</div></td>
+                        <td>@a.Action</td>
+                        <td>@a.EntityName</td>
+                        <td>@a.RecordId<div class="text-muted">@a.Details</div></td>
+                        <td><code class="text-break" style="font-size:.7rem">@a.OldValue</code></td>
+                        <td><code class="text-break" style="font-size:.7rem">@a.NewValue</code></td>
+                        <td class="text-nowrap">@a.IpAddress</td>
                     </tr>
                 }
             </tbody>

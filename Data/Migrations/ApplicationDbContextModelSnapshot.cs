@@ -85,22 +85,41 @@ namespace AcxiomCRM.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Timestamp");
+
                     b.Property<string>("Details")
                         .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Entity")
+                    b.Property<string>("EntityName")
                         .IsRequired()
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("Entity");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(64)
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("EntityId")
+                    b.Property<string>("NewValue")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("OldValue")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RecordId")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("TEXT");
+                        .HasColumnType("TEXT")
+                        .HasColumnName("EntityId");
 
-                    b.Property<DateTime>("Timestamp")
+                    b.Property<string>("UserId")
+                        .HasMaxLength(450)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("UserName")
@@ -110,7 +129,7 @@ namespace AcxiomCRM.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Timestamp");
+                    b.HasIndex("CreatedDate");
 
                     b.ToTable("AuditLogs");
                 });

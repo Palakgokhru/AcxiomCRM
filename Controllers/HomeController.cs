@@ -17,9 +17,27 @@ public class HomeController(ApplicationDbContext db, UserManager<IdentityUser> u
             .Include(f => f.Customer).Include(f => f.Lead).Include(f => f.Opportunity)
             .Where(f => f.Status == FollowUpStatus.Planned && f.FollowUpDate <= until)
             .OrderBy(f => f.FollowUpDate).Take(20).ToListAsync();
-        ViewBag.OpenOpportunities = await Scoped(Db.Opportunities).CountAsync(o => o.Status == OpportunityStatus.Open);
-        ViewBag.LeadCount = await Scoped(Db.Leads).CountAsync(l => l.Status != "Converted" && l.Status != "Lost");
-        ViewBag.CustomerCount = await Scoped(Db.Customers).CountAsync(c => c.Status != CustomerStatus.Inactive);
+        // All figures go through Scoped(), so a SalesExecutive only sees their own records.
+        var opps = Scoped(Db.Opportunities);
+        var leads = Scoped(Db.Leads);
+        string[] closedLeadStatuses = ["Converted", "Lost", "Unqualified"];
+        ViewBag.TotalCustomers = await Scoped(Db.Customers).CountAsync();
+        ViewBag.TotalLeads = await leads.CountAsync();
+        ViewBag.OpenLeads = await leads.CountAsync(l => !closedLeadStatuses.Contains(l.Status));
+        ViewBag.TotalOpportunities = await opps.CountAsync();
+        ViewBag.OpenOpportunities = await opps.CountAsync(o => o.Status == OpportunityStatus.Open);
+        ViewBag.WonOpportunities = await opps.CountAsync(o => o.Stage == OpportunityStage.Won);
+        ViewBag.LostOpportunities = await opps.CountAsync(o => o.Stage == OpportunityStage.Lost);
+        // SQLite cannot SUM decimals in SQL, so sum the open amounts in memory.
+        ViewBag.PipelineValue = (await opps.Where(o => o.Status == OpportunityStatus.Open).Select(o => o.Amount).ToListAsync()).Sum();
+
+        // Chart data: opportunities per stage and leads per status (zero-filled, so an empty DB still renders).
+        var stageCounts = await opps.GroupBy(o => o.Stage).Select(g => new { g.Key, Count = g.Count() }).ToListAsync();
+        ViewBag.StageLabels = OpportunityStage.All;
+        ViewBag.StageCounts = OpportunityStage.All.Select(s => stageCounts.FirstOrDefault(x => x.Key == s)?.Count ?? 0).ToArray();
+        var leadCounts = await leads.GroupBy(l => l.Status).Select(g => new { g.Key, Count = g.Count() }).ToListAsync();
+        ViewBag.LeadStatusLabels = LeadStatus.All;
+        ViewBag.LeadStatusCounts = LeadStatus.All.Select(s => leadCounts.FirstOrDefault(x => x.Key == s)?.Count ?? 0).ToArray();
         return View();
     }
 

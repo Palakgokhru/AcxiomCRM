@@ -11,10 +11,46 @@
     </p>
 </div>
 
+@{
+    var cards = new (string Label, string Value, string Controller, string? Status)[]
+    {
+        ("Total Customers", ViewBag.TotalCustomers.ToString(), "Customers", null),
+        ("Total Leads", ViewBag.TotalLeads.ToString(), "Leads", null),
+        ("Open Leads", ViewBag.OpenLeads.ToString(), "Leads", null),
+        ("Total Opportunities", ViewBag.TotalOpportunities.ToString(), "Opportunities", null),
+        ("Open Opportunities", ViewBag.OpenOpportunities.ToString(), "Opportunities", "Open"),
+        ("Won Opportunities", ViewBag.WonOpportunities.ToString(), "Opportunities", null),
+        ("Lost Opportunities", ViewBag.LostOpportunities.ToString(), "Opportunities", null),
+        ("Total Pipeline Value", ((decimal)ViewBag.PipelineValue).ToString("N2"), "Opportunities", "Open"),
+    };
+}
 <div class="row g-3 mb-4">
-    <div class="col-md-4"><a asp-controller="Customers" asp-action="Index" class="card shadow-sm text-decoration-none"><div class="card-body"><div class="text-muted small">Active customers</div><div class="fs-3 fw-semibold">@ViewBag.CustomerCount</div></div></a></div>
-    <div class="col-md-4"><a asp-controller="Leads" asp-action="Index" class="card shadow-sm text-decoration-none"><div class="card-body"><div class="text-muted small">Open leads</div><div class="fs-3 fw-semibold">@ViewBag.LeadCount</div></div></a></div>
-    <div class="col-md-4"><a asp-controller="Opportunities" asp-action="Index" asp-route-status="Open" class="card shadow-sm text-decoration-none"><div class="card-body"><div class="text-muted small">Open opportunities</div><div class="fs-3 fw-semibold">@ViewBag.OpenOpportunities</div></div></a></div>
+    @foreach (var c in cards)
+    {
+        <div class="col-6 col-md-3">
+            <a asp-controller="@c.Controller" asp-action="Index" asp-route-status="@c.Status" class="card shadow-sm text-decoration-none h-100">
+                <div class="card-body">
+                    <div class="text-muted small">@c.Label</div>
+                    <div class="fs-4 fw-semibold text-body" data-card="@c.Label">@c.Value</div>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6">Opportunities by stage</h2>
+            <canvas id="stageChart" height="220"></canvas>
+        </div></div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6">Leads by status</h2>
+            <canvas id="leadChart" height="220"></canvas>
+        </div></div>
+    </div>
 </div>
 
 <div class="card shadow-sm">
@@ -45,3 +81,23 @@
         </ul>
     }
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <script>
+        (function () {
+            if (typeof Chart === "undefined") return; // CDN unavailable: cards above still show the figures
+            const opts = { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } };
+            new Chart(document.getElementById("stageChart"), {
+                type: "bar",
+                data: { labels: @Json.Serialize(ViewBag.StageLabels), datasets: [{ data: @Json.Serialize(ViewBag.StageCounts), backgroundColor: "#0d6efd" }] },
+                options: opts
+            });
+            new Chart(document.getElementById("leadChart"), {
+                type: "bar",
+                data: { labels: @Json.Serialize(ViewBag.LeadStatusLabels), datasets: [{ data: @Json.Serialize(ViewBag.LeadStatusCounts), backgroundColor: "#198754" }] },
+                options: opts
+            });
+        })();
+    </script>
+}

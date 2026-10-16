@@ -485,3 +485,7 @@ $RECYCLE.BIN/
 app.db
 app.db-shm
 app.db-wal
+
+# acceptance test cookie jars
+tests/*.txt
+app.db.bak*

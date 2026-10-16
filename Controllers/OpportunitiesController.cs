@@ -48,7 +48,7 @@ public class OpportunitiesController(ApplicationDbContext db, UserManager<Identi
         Copy(input, opp);
         Db.Opportunities.Add(opp);
         await Db.SaveChangesAsync();
-        Db.Audit(UserName, "Create", nameof(Opportunity), opp.Id, $"{opp.OpportunityName} {opp.Amount:0.00} {opp.Stage}");
+        Db.Audit(UserName, "Create", nameof(Opportunity), opp.Id, $"{opp.OpportunityName} {opp.Amount:0.00} {opp.Stage}", newValue: AuditExtensions.Snapshot(opp.AuditFields()));
         await Db.SaveChangesAsync();
 
         TempData["Success"] = "Opportunity created.";
@@ -78,8 +78,9 @@ public class OpportunitiesController(ApplicationDbContext db, UserManager<Identi
             return View(input);
         }
 
+        var oldValue = AuditExtensions.Snapshot(opp.AuditFields());
         Copy(input, opp);
-        Db.Audit(UserName, "Update", nameof(Opportunity), opp.Id, $"{opp.OpportunityName} {opp.Amount:0.00} {opp.Stage}/{opp.Status}");
+        Db.Audit(UserName, "Update", nameof(Opportunity), opp.Id, $"{opp.OpportunityName} {opp.Stage}/{opp.Status}", oldValue, AuditExtensions.Snapshot(opp.AuditFields()));
         await Db.SaveChangesAsync();
         TempData["Success"] = "Opportunity updated.";
         return RedirectToAction(nameof(Details), new { id });

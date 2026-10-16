@@ -62,13 +62,21 @@ public class Customer : IAssignable
     public IdentityUser? AssignedUser { get; set; }
 }
 
+// Never store passwords, hashes, tokens or secrets here: only business field snapshots.
 public class AuditLog
 {
     public int Id { get; set; }
-    public DateTime Timestamp { get; set; }
+    [System.ComponentModel.DataAnnotations.Schema.Column("Timestamp")]
+    public DateTime CreatedDate { get; set; }
+    [StringLength(450)] public string? UserId { get; set; }
     [StringLength(256)] public string UserName { get; set; } = string.Empty;
     [StringLength(50)] public string Action { get; set; } = string.Empty;
-    [StringLength(50)] public string Entity { get; set; } = string.Empty;
-    [StringLength(50)] public string EntityId { get; set; } = string.Empty;
+    [System.ComponentModel.DataAnnotations.Schema.Column("Entity"), StringLength(50)]
+    public string EntityName { get; set; } = string.Empty;
+    [System.ComponentModel.DataAnnotations.Schema.Column("EntityId"), StringLength(50)]
+    public string RecordId { get; set; } = string.Empty;
+    [StringLength(4000)] public string? OldValue { get; set; }
+    [StringLength(4000)] public string? NewValue { get; set; }
     [StringLength(1000)] public string Details { get; set; } = string.Empty;
+    [StringLength(64)] public string? IpAddress { get; set; }
 }

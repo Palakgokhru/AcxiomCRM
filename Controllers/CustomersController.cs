@@ -93,7 +93,7 @@ public class CustomersController(ApplicationDbContext db, UserManager<IdentityUs
             await LoadFormListsAsync(input.AssignedUserId);
             return View(input);
         }
-        db.Audit(User.Identity.Name, "Create", nameof(Customer), customer.Id, $"{customer.CustomerCode} {customer.CustomerName}");
+        db.Audit(User.Identity.Name, "Create", nameof(Customer), customer.Id, $"{customer.CustomerCode} {customer.CustomerName}", newValue: AuditExtensions.Snapshot(customer.AuditFields()));
         await db.SaveChangesAsync();
 
         TempData["Success"] = $"Customer {customer.CustomerCode} created.";
@@ -133,8 +133,10 @@ public class CustomersController(ApplicationDbContext db, UserManager<IdentityUs
             return View(input);
         }
 
+        var oldValue = AuditExtensions.Snapshot(customer.AuditFields());
         CopyEditableFields(input, customer);
-        db.Audit(User.Identity!.Name, "Update", nameof(Customer), customer.Id, $"{customer.CustomerCode} {customer.CustomerName}");
+        db.Audit(User.Identity!.Name, "Update", nameof(Customer), customer.Id, $"{customer.CustomerCode} {customer.CustomerName}",
+            oldValue, AuditExtensions.Snapshot(customer.AuditFields()));
         if (!await TrySaveAsync())
         {
             await LoadFormListsAsync(input.AssignedUserId);
@@ -158,8 +160,10 @@ public class CustomersController(ApplicationDbContext db, UserManager<IdentityUs
         var customer = await ScopedCustomers().FirstOrDefaultAsync(c => c.Id == id);
         if (customer is null) return NotFound();
 
+        var oldStatus = customer.Status;
         customer.Status = CustomerStatus.Inactive;
-        db.Audit(User.Identity!.Name, "Deactivate", nameof(Customer), customer.Id, customer.CustomerCode);
+        db.Audit(User.Identity!.Name, "Deactivate", nameof(Customer), customer.Id, customer.CustomerCode,
+            $"Status={oldStatus}", $"Status={customer.Status}");
         await db.SaveChangesAsync();
         TempData["Success"] = $"Customer {customer.CustomerCode} deactivated.";
         return RedirectToAction(nameof(Index));
@@ -179,7 +183,8 @@ public class CustomersController(ApplicationDbContext db, UserManager<IdentityUs
         }
 
         db.Customers.Remove(customer);
-        db.Audit(User.Identity!.Name, "Delete", nameof(Customer), customer.Id, $"{customer.CustomerCode} {customer.CustomerName}");
+        db.Audit(User.Identity!.Name, "Delete", nameof(Customer), customer.Id, $"{customer.CustomerCode} {customer.CustomerName}",
+            AuditExtensions.Snapshot(customer.AuditFields()));
         await db.SaveChangesAsync();
         TempData["Success"] = $"Customer {customer.CustomerCode} permanently deleted.";
         return RedirectToAction(nameof(Index));

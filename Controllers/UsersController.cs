@@ -111,5 +111,5 @@ public class UsersController(UserManager<IdentityUser> userManager, ApplicationD
 public class AuditLogController(ApplicationDbContext db) : Controller
 {
     public async Task<IActionResult> Index() =>
-        View(await db.AuditLogs.OrderByDescending(a => a.Timestamp).Take(500).ToListAsync());
+        View(await db.AuditLogs.OrderByDescending(a => a.CreatedDate).Take(500).ToListAsync());
 }

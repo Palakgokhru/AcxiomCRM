@@ -59,7 +59,7 @@ public class LeadsController(ApplicationDbContext db, UserManager<IdentityUser> 
         Copy(input, lead);
         Db.Leads.Add(lead);
         await Db.SaveChangesAsync();
-        Db.Audit(UserName, "Create", nameof(Lead), lead.Id, $"{lead.LeadCode} {lead.LeadName}");
+        Db.Audit(UserName, "Create", nameof(Lead), lead.Id, $"{lead.LeadCode} {lead.LeadName}", newValue: AuditExtensions.Snapshot(lead.AuditFields()));
         await Db.SaveChangesAsync();
 
         TempData["Success"] = $"Lead {lead.LeadCode} created.";
@@ -90,8 +90,9 @@ public class LeadsController(ApplicationDbContext db, UserManager<IdentityUser> 
             return View(input);
         }
 
+        var oldValue = AuditExtensions.Snapshot(lead.AuditFields());
         Copy(input, lead);
-        Db.Audit(UserName, "Update", nameof(Lead), lead.Id, $"{lead.LeadCode} status {lead.Status}");
+        Db.Audit(UserName, "Update", nameof(Lead), lead.Id, $"{lead.LeadCode} status {lead.Status}", oldValue, AuditExtensions.Snapshot(lead.AuditFields()));
         await Db.SaveChangesAsync();
         TempData["Success"] = "Lead updated.";
         return RedirectToAction(nameof(Details), new { id });
@@ -103,8 +104,9 @@ public class LeadsController(ApplicationDbContext db, UserManager<IdentityUser> 
     {
         var lead = await Scoped(Db.Leads).FirstOrDefaultAsync(l => l.Id == id);
         if (lead is null) return NotFound();
+        var oldStatus = lead.Status;
         lead.Status = "Lost";
-        Db.Audit(UserName, "Deactivate", nameof(Lead), lead.Id, lead.LeadCode);
+        Db.Audit(UserName, "Deactivate", nameof(Lead), lead.Id, lead.LeadCode, $"Status={oldStatus}", "Status=Lost");
         await Db.SaveChangesAsync();
         TempData["Success"] = $"Lead {lead.LeadCode} marked Lost.";
         return RedirectToAction(nameof(Index));
@@ -116,7 +118,7 @@ public class LeadsController(ApplicationDbContext db, UserManager<IdentityUser> 
         var lead = await Db.Leads.FindAsync(id);
         if (lead is null) return NotFound();
         Db.Leads.Remove(lead);
-        Db.Audit(UserName, "Delete", nameof(Lead), lead.Id, lead.LeadCode);
+        Db.Audit(UserName, "Delete", nameof(Lead), lead.Id, lead.LeadCode, AuditExtensions.Snapshot(lead.AuditFields()));
         await Db.SaveChangesAsync();
         TempData["Success"] = $"Lead {lead.LeadCode} deleted.";
         return RedirectToAction(nameof(Index));

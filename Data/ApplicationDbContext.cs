@@ -4,8 +4,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace AcxiomCRM.Data;
 
-public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : IdentityDbContext(options)
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IHttpContextAccessor? httpContextAccessor = null)
+    : IdentityDbContext(options)
 {
+    // Used by Audit() to record who did what and from where.
+    public HttpContext? CurrentHttpContext => httpContextAccessor?.HttpContext;
+
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<Lead> Leads => Set<Lead>();
@@ -31,7 +35,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.SetNull);
         });
 
-        builder.Entity<AuditLog>().HasIndex(x => x.Timestamp);
+        builder.Entity<AuditLog>().HasIndex(x => x.CreatedDate);
 
         builder.Entity<Lead>(l =>
         {
@@ -70,17 +74,46 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
 public static class AuditExtensions
 {
+    private static readonly System.Text.Json.JsonSerializerOptions JsonOptions = new() { WriteIndented = false };
+
+    // JSON snapshot of the business fields of a record (callers pass only safe fields).
+    public static string Snapshot(object values) => System.Text.Json.JsonSerializer.Serialize(values, JsonOptions);
+
     // Queues an audit row; it is saved with the caller's next SaveChangesAsync.
-    public static void Audit(this ApplicationDbContext db, string? userName, string action, string entity, object entityId, string details = "")
+    // UserId and IP address are taken from the current request when there is one.
+    public static void Audit(this ApplicationDbContext db, string? userName, string action, string entity, object entityId,
+        string details = "", string? oldValue = null, string? newValue = null)
     {
+        var http = db.CurrentHttpContext;
+        static string? Cut(string? v, int max) => v is null ? null : v.Length > max ? v[..max] : v;
         db.AuditLogs.Add(new AuditLog
         {
-            Timestamp = DateTime.UtcNow,
-            UserName = userName ?? "(unknown)",
+            CreatedDate = DateTime.UtcNow,
+            UserId = http?.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value,
+            UserName = userName ?? http?.User.Identity?.Name ?? "(anonymous)",
             Action = action,
-            Entity = entity,
-            EntityId = entityId.ToString() ?? string.Empty,
-            Details = details.Length > 1000 ? details[..1000] : details
+            EntityName = entity,
+            RecordId = entityId.ToString() ?? string.Empty,
+            Details = Cut(details, 1000)!,
+            OldValue = Cut(oldValue, 4000),
+            NewValue = Cut(newValue, 4000),
+            IpAddress = http?.Connection.RemoteIpAddress?.ToString()
         });
     }
+
+    public static object AuditFields(this Customer c) => new
+    {
+        c.CustomerCode, c.CustomerName, c.Email, c.Phone, c.CompanyName, c.Address, c.City, c.State, c.Status, c.AssignedUserId
+    };
+
+    public static object AuditFields(this Lead l) => new
+    {
+        l.LeadCode, l.LeadName, l.Email, l.Phone, l.CompanyName, l.Source, l.Status, l.ExpectedValue, l.AssignedUserId
+    };
+
+    public static object AuditFields(this Opportunity o) => new
+    {
+        o.OpportunityName, o.CustomerId, o.LeadId, o.Amount, o.Stage, o.Probability,
+        ExpectedCloseDate = o.ExpectedCloseDate.ToString("yyyy-MM-dd"), o.Status, o.AssignedUserId
+    };
 }

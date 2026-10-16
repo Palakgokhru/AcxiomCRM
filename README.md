@@ -93,6 +93,46 @@ Working:
 **Not built yet**: Reports (placeholder page, Admin/Manager only). Follow-ups and activities have
 no edit/delete pages.
 
+## REST API
+
+Uses the same login cookie as the website (log in through the browser or POST the login form first).
+Unauthenticated calls get **401**, role failures **403**. Write endpoints only accept
+`Content-Type: application/json`. Responses are DTOs; no Identity or password fields are exposed.
+
+| Method | Route | Result |
+|---|---|---|
+| GET | `/api/customers?search=` | 200, customers in the caller's scope |
+| GET | `/api/customers/{id}` | 200, or 404 if missing / not yours |
+| POST | `/api/customers` | 201 + Location, 400 validation, 409 duplicate email/phone/name+company |
+| PUT | `/api/customers/{id}` | 200, 400, 404, 409 |
+| DELETE | `/api/customers/{id}` | 204 (soft delete: Status = Inactive), 404 |
+| GET | `/api/leads`, `/api/opportunities` | 200, scoped lists |
+
+## Audit log
+
+`AuditLogs` records UserId, UserName, Action, EntityName, RecordId, OldValue/NewValue (JSON snapshot
+of business fields), CreatedDate (UTC) and IpAddress for customer/lead/opportunity create, update,
+deactivate and delete, user administration, follow-up/activity changes, and login success/failure/lockout.
+Passwords, hashes and tokens are never logged. Viewable by Admin only (**Audit Log** menu).
+
+## Dashboard
+
+Total Customers, Total Leads, Open Leads, Total/Open/Won/Lost Opportunities and Total Pipeline Value
+(sum of Open opportunity amounts), plus Chart.js bar charts of opportunities by stage and leads by
+status. All figures are computed from the database within the user's scope. Chart.js loads from the
+jsDelivr CDN; without internet the cards still work but the charts are blank.
+
+## Acceptance tests
+
+With the app running (`dotnet run --launch-profile http`), from Git Bash:
+
+```bash
+bash tests/acceptance.sh
+```
+
+It logs in as each seeded user and checks access control, validation, business rules, API status
+codes, auditing and dashboard scoping against the live app (creates a few test records each run).
+
 ## Layout
 
 ```
@@ -103,6 +143,7 @@ Controllers/
   CrmController.cs        Base class: ownership scoping, related-record and allowed-value checks
   LeadsController.cs, OpportunitiesController.cs, FollowUpsController.cs, ActivitiesController.cs
   ModulesController.cs    Reports placeholder
+  Api/CustomersApiController.cs  REST API (customers CRUD, leads/opportunities read)
 Data/
   ApplicationDbContext.cs Identity DbContext, Customers, AuditLogs, unique indexes
   DbSeeder.cs             Migrate on startup, seed roles + dev accounts
