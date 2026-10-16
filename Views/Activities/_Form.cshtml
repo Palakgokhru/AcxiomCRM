@@ -1,0 +1,29 @@
+@model Activity
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+<div class="row g-3">
+    <div class="col-md-4">
+        <label asp-for="ActivityType" class="form-label"></label>
+        <select asp-for="ActivityType" asp-items="new SelectList(ActivityTypes.All)" class="form-select"></select>
+        <span asp-validation-for="ActivityType" class="text-danger small"></span>
+    </div>
+    <div class="col-md-8">
+        <label asp-for="Subject" class="form-label"></label>
+        <input asp-for="Subject" class="form-control" />
+        <span asp-validation-for="Subject" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="ActivityDate" class="form-label"></label>
+        <input asp-for="ActivityDate" class="form-control" />
+        <span asp-validation-for="ActivityDate" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Status" class="form-label"></label>
+        <select asp-for="Status" asp-items="new SelectList(ActivityStatus.All)" class="form-select"></select>
+        <span asp-validation-for="Status" class="text-danger small"></span>
+    </div>
+    <div class="w-100"></div>
+    <partial name="_RelatedFields" model="(Model.CustomerId, Model.LeadId, Model.OpportunityId)" />
+    <partial name="_AssignField" model="Model.AssignedUserId" />
+</div>

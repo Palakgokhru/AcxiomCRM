@@ -1,0 +1,28 @@
+@model FollowUp
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+<div class="row g-3">
+    <partial name="_RelatedFields" model="(Model.CustomerId, Model.LeadId, Model.OpportunityId)" />
+    <div class="col-md-4">
+        <label asp-for="FollowUpDate" class="form-label"></label>
+        <input asp-for="FollowUpDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+        <span asp-validation-for="FollowUpDate" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="FollowUpType" class="form-label"></label>
+        <select asp-for="FollowUpType" asp-items="new SelectList(FollowUpTypes.All)" class="form-select"></select>
+        <span asp-validation-for="FollowUpType" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Status" class="form-label"></label>
+        <select asp-for="Status" asp-items="new SelectList(FollowUpStatus.All)" class="form-select"></select>
+        <span asp-validation-for="Status" class="text-danger small"></span>
+    </div>
+    <div class="col-12">
+        <label asp-for="Remarks" class="form-label"></label>
+        <textarea asp-for="Remarks" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Remarks" class="text-danger small"></span>
+    </div>
+    <partial name="_AssignField" model="Model.AssignedUserId" />
+</div>

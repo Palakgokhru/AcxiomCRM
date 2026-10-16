@@ -1,0 +1,24 @@
+@* Customer / Lead / Opportunity pickers for follow-ups and activities (lists are already scoped to the user). *@
+@model (int? CustomerId, int? LeadId, int? OpportunityId)
+@{
+    var pickers = new (string Name, string Label, object? List, int? Selected)[]
+    {
+        ("CustomerId", "Customer", ViewBag.Customers, Model.CustomerId),
+        ("LeadId", "Lead", ViewBag.Leads, Model.LeadId),
+        ("OpportunityId", "Opportunity", ViewBag.Opportunities, Model.OpportunityId)
+    };
+}
+@foreach (var p in pickers)
+{
+    <div class="col-md-4">
+        <label class="form-label" for="@p.Name">@p.Label</label>
+        <select id="@p.Name" name="@p.Name" class="form-select">
+            <option value="">-- None --</option>
+            @foreach (var i in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)p.List!)
+            {
+                <option value="@i.Value" selected="@(i.Value == p.Selected?.ToString())">@i.Text</option>
+            }
+        </select>
+        @Html.ValidationMessage(p.Name, null, new { @class = "text-danger small" })
+    </div>
+}

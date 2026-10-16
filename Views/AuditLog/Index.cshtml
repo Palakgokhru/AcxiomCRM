@@ -1,0 +1,29 @@
+@model IEnumerable<AcxiomCRM.Models.AuditLog>
+@{
+    ViewData["Title"] = "Audit Log";
+}
+
+<h1 class="h3 mb-3">Audit Log</h1>
+<p class="text-muted small">Most recent 500 entries. Times are UTC.</p>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-light border">No audit entries yet.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm bg-white">
+            <thead class="table-light"><tr><th>When (UTC)</th><th>User</th><th>Action</th><th>Entity</th><th>Id</th><th>Details</th></tr></thead>
+            <tbody>
+                @foreach (var a in Model)
+                {
+                    <tr>
+                        <td class="text-nowrap">@a.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        <td>@a.UserName</td><td>@a.Action</td><td>@a.Entity</td><td>@a.EntityId</td><td>@a.Details</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

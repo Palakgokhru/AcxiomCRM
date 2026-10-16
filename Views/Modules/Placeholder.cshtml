@@ -1,0 +1,17 @@
+@{
+    var title = (string?)ViewData["Title"] ?? "Module";
+    var description = (string?)ViewData["Description"] ?? string.Empty;
+}
+
+<h1 class="h3 mb-1">@title</h1>
+<p class="text-muted">@description</p>
+
+<div class="alert alert-warning mt-4" role="alert">
+    <h2 class="h6 alert-heading">Not implemented yet</h2>
+    <p class="mb-0">
+        This is a navigation placeholder. The <strong>@title</strong> module has no data model,
+        screens, or behaviour behind it at this point -- only the link you followed to get here.
+    </p>
+</div>
+
+<a class="btn btn-outline-secondary btn-sm" asp-controller="Home" asp-action="Index">Back to dashboard</a>

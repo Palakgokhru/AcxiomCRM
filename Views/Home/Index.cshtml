@@ -1,0 +1,47 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    var pending = (List<FollowUp>)ViewBag.PendingFollowUps;
+}
+
+<div class="mb-4">
+    <h1 class="h3 mb-1">Dashboard</h1>
+    <p class="text-muted mb-0">
+        Welcome, @User.Identity?.Name.
+        @(User.IsInRole("SalesExecutive") ? "Figures show records assigned to you." : "Figures show all team records.")
+    </p>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4"><a asp-controller="Customers" asp-action="Index" class="card shadow-sm text-decoration-none"><div class="card-body"><div class="text-muted small">Active customers</div><div class="fs-3 fw-semibold">@ViewBag.CustomerCount</div></div></a></div>
+    <div class="col-md-4"><a asp-controller="Leads" asp-action="Index" class="card shadow-sm text-decoration-none"><div class="card-body"><div class="text-muted small">Open leads</div><div class="fs-3 fw-semibold">@ViewBag.LeadCount</div></div></a></div>
+    <div class="col-md-4"><a asp-controller="Opportunities" asp-action="Index" asp-route-status="Open" class="card shadow-sm text-decoration-none"><div class="card-body"><div class="text-muted small">Open opportunities</div><div class="fs-3 fw-semibold">@ViewBag.OpenOpportunities</div></div></a></div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center bg-white">
+        <h2 class="h6 mb-0">Pending follow-ups (overdue and next 14 days)</h2>
+        <a asp-controller="FollowUps" asp-action="Index" class="small">View all</a>
+    </div>
+    @if (pending.Count == 0)
+    {
+        <div class="card-body text-muted small">No pending follow-ups.</div>
+    }
+    else
+    {
+        <ul class="list-group list-group-flush">
+            @foreach (var f in pending)
+            {
+                var overdue = f.FollowUpDate.Date < DateTime.Today;
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>
+                        <strong>@f.FollowUpDate.ToString("dd MMM")</strong> &middot; @f.FollowUpType &middot;
+                        @(f.Customer?.CustomerName ?? f.Lead?.LeadName ?? f.Opportunity?.OpportunityName)
+                        <span class="text-muted small">@f.Remarks</span>
+                    </span>
+                    @if (overdue) { <span class="badge bg-danger align-self-center">Overdue</span> }
+                    else if (f.FollowUpDate.Date == DateTime.Today) { <span class="badge bg-warning text-dark align-self-center">Today</span> }
+                </li>
+            }
+        </ul>
+    }
+</div>

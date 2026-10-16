@@ -1,0 +1,16 @@
+@* Assignment dropdown, only offered to Admin/Manager. The server ignores it for SalesExecutives. *@
+@{ var selected = Model as string; }
+@if (ViewBag.CanAssign == true)
+{
+    <div class="col-md-6">
+        <label class="form-label" for="AssignedUserId">Assigned To</label>
+        <select id="AssignedUserId" name="AssignedUserId" class="form-select">
+            <option value="">-- Unassigned --</option>
+            @foreach (var u in (IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>)ViewBag.Users)
+            {
+                <option value="@u.Value" selected="@(u.Value == selected)">@u.Text</option>
+            }
+        </select>
+        @Html.ValidationMessage("AssignedUserId", null, new { @class = "text-danger small" })
+    </div>
+}

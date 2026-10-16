@@ -1,0 +1,65 @@
+@model IEnumerable<FollowUp>
+@{
+    ViewData["Title"] = "Follow-ups";
+    var status = ViewData["Status"] as string;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Follow-ups</h1>
+    <a asp-action="Create" class="btn btn-primary">+ Schedule Follow-up</a>
+</div>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+
+<ul class="nav nav-pills mb-3">
+    @foreach (var s in FollowUpStatus.All.Append("All"))
+    {
+        <li class="nav-item">
+            <a class="nav-link @(s == status ? "active" : "")" asp-action="Index" asp-route-status="@s">@(s == "Planned" ? "Pending (Planned)" : s)</a>
+        </li>
+    }
+</ul>
+
+@if (!Model.Any()) { <div class="alert alert-light border">No follow-ups.</div> }
+else
+{
+    <div class="table-responsive">
+        <table class="table align-middle bg-white">
+            <thead class="table-light"><tr><th>Date</th><th>Type</th><th>Related To</th><th>Remarks</th><th>Status</th><th>Assigned To</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var f in Model)
+                {
+                    var overdue = f.Status == "Planned" && f.FollowUpDate.Date < DateTime.Today;
+                    <tr class="@(overdue ? "table-danger" : f.Status == "Planned" && f.FollowUpDate.Date == DateTime.Today ? "table-warning" : "")">
+                        <td class="text-nowrap">@f.FollowUpDate.ToString("dd MMM yyyy") @if (overdue) { <span class="badge bg-danger">Overdue</span> }</td>
+                        <td>@f.FollowUpType</td>
+                        <td class="small">
+                            @if (f.Customer is not null) { <div>Customer: <a asp-controller="Customers" asp-action="Details" asp-route-id="@f.CustomerId">@f.Customer.CustomerName</a></div> }
+                            @if (f.Lead is not null) { <div>Lead: <a asp-controller="Leads" asp-action="Details" asp-route-id="@f.LeadId">@f.Lead.LeadName</a></div> }
+                            @if (f.Opportunity is not null) { <div>Opportunity: <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@f.OpportunityId">@f.Opportunity.OpportunityName</a></div> }
+                        </td>
+                        <td class="small">@f.Remarks</td>
+                        <td>@f.Status</td>
+                        <td>@(f.AssignedUser?.UserName ?? "—")</td>
+                        <td class="text-nowrap text-end">
+                            @if (f.Status == "Planned")
+                            {
+                                <form asp-action="SetStatus" asp-route-id="@f.Id" method="post" class="d-inline">
+                                    <input type="hidden" name="status" value="Completed" />
+                                    <button class="btn btn-sm btn-success">Complete</button>
+                                </form>
+                                <form asp-action="SetStatus" asp-route-id="@f.Id" method="post" class="d-inline">
+                                    <input type="hidden" name="status" value="Missed" />
+                                    <button class="btn btn-sm btn-outline-warning">Missed</button>
+                                </form>
+                                <form asp-action="SetStatus" asp-route-id="@f.Id" method="post" class="d-inline">
+                                    <input type="hidden" name="status" value="Cancelled" />
+                                    <button class="btn btn-sm btn-outline-secondary">Cancel</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

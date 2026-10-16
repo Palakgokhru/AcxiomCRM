@@ -1,0 +1,39 @@
+@model Lead
+@{
+    ViewData["Title"] = Model.LeadName;
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h1 class="h3 mb-0">@Model.LeadName <span class="text-muted fs-5">@Model.LeadCode</span></h1>
+    <div class="d-flex gap-2 flex-wrap">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+        <a asp-controller="Opportunities" asp-action="Create" asp-route-leadId="@Model.Id" class="btn btn-outline-primary">New opportunity</a>
+        <a asp-controller="FollowUps" asp-action="Create" asp-route-leadId="@Model.Id" class="btn btn-outline-primary">Schedule follow-up</a>
+        @if (Model.Status != "Lost")
+        {
+            <form asp-action="Deactivate" asp-route-id="@Model.Id" method="post"><button class="btn btn-outline-warning">Mark Lost</button></form>
+        }
+        @if (User.IsInRole("Admin"))
+        {
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Permanently delete this lead?');">
+                <button class="btn btn-outline-danger">Delete</button>
+            </form>
+        }
+        <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
+    </div>
+</div>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+
+<div class="card shadow-sm"><div class="card-body">
+    <dl class="row mb-0">
+        <dt class="col-sm-3">Lead Id</dt><dd class="col-sm-9">@Model.Id</dd>
+        <dt class="col-sm-3">Company</dt><dd class="col-sm-9">@Model.CompanyName</dd>
+        <dt class="col-sm-3">Email</dt><dd class="col-sm-9">@Model.Email</dd>
+        <dt class="col-sm-3">Phone</dt><dd class="col-sm-9">@Model.Phone</dd>
+        <dt class="col-sm-3">Source</dt><dd class="col-sm-9">@Model.Source</dd>
+        <dt class="col-sm-3">Status</dt><dd class="col-sm-9">@Model.Status</dd>
+        <dt class="col-sm-3">Expected Value</dt><dd class="col-sm-9">@Model.ExpectedValue.ToString("N2")</dd>
+        <dt class="col-sm-3">Assigned To</dt><dd class="col-sm-9">@(Model.AssignedUser?.UserName ?? "Unassigned")</dd>
+        <dt class="col-sm-3">Created</dt><dd class="col-sm-9">@Model.CreatedDate.ToLocalTime().ToString("dd MMM yyyy HH:mm") by @Model.CreatedBy</dd>
+    </dl>
+</div></div>

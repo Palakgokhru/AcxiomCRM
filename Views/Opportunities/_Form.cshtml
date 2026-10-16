@@ -1,0 +1,55 @@
+@model Opportunity
+@using Microsoft.AspNetCore.Mvc.Rendering
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="OpportunityName" class="form-label"></label>
+        <input asp-for="OpportunityName" class="form-control" />
+        <span asp-validation-for="OpportunityName" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="CustomerId" class="form-label"></label>
+        <select asp-for="CustomerId" asp-items="ViewBag.Customers" class="form-select">
+            <option value="">-- Select customer --</option>
+        </select>
+        <span asp-validation-for="CustomerId" class="text-danger small"></span>
+    </div>
+    <div class="col-md-6">
+        <label asp-for="LeadId" class="form-label"></label>
+        <select asp-for="LeadId" asp-items="ViewBag.Leads" class="form-select">
+            <option value="">-- None --</option>
+        </select>
+        <span asp-validation-for="LeadId" class="text-danger small"></span>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Amount" class="form-label"></label>
+        <input asp-for="Amount" class="form-control" type="number" step="0.01" min="0" />
+        <span asp-validation-for="Amount" class="text-danger small"></span>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Probability" class="form-label">Probability (%)</label>
+        <input asp-for="Probability" class="form-control" type="number" min="0" max="100" />
+        <span asp-validation-for="Probability" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Stage" class="form-label"></label>
+        <select asp-for="Stage" asp-items="new SelectList(OpportunityStage.All)" class="form-select"></select>
+        <span asp-validation-for="Stage" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="Status" class="form-label"></label>
+        <select asp-for="Status" asp-items="new SelectList(OpportunityStatus.All)" class="form-select"></select>
+        <span asp-validation-for="Status" class="text-danger small"></span>
+    </div>
+    <div class="col-md-4">
+        <label asp-for="ExpectedCloseDate" class="form-label"></label>
+        <input asp-for="ExpectedCloseDate" class="form-control" />
+        <span asp-validation-for="ExpectedCloseDate" class="text-danger small"></span>
+    </div>
+    <partial name="_AssignField" model="Model.AssignedUserId" />
+</div>
+<p class="small text-muted mt-3 mb-0">
+    Open (active) opportunities need an amount above 0 and an expected close date of today or later.
+    Won/Lost stages require status Closed.
+</p>

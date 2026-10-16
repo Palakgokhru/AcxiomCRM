@@ -1,0 +1,50 @@
+@model IEnumerable<Lead>
+@{
+    ViewData["Title"] = "Leads";
+    var status = ViewData["Status"] as string;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Leads</h1>
+    <a asp-action="Create" class="btn btn-primary">+ New Lead</a>
+</div>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-6"><input name="search" value="@ViewData["Search"]" class="form-control" placeholder="Search name, code, email, phone, company" /></div>
+    <div class="col-md-3">
+        <select name="status" class="form-select">
+            <option value="">All statuses</option>
+            @foreach (var s in LeadStatus.All) { <option value="@s" selected="@(s == status)">@s</option> }
+        </select>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+        <button class="btn btn-outline-primary">Filter</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Clear</a>
+    </div>
+</form>
+
+@if (!Model.Any()) { <div class="alert alert-light border">No leads found.</div> }
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle bg-white">
+            <thead class="table-light"><tr><th>Code</th><th>Name</th><th>Company</th><th>Source</th><th>Status</th><th class="text-end">Expected Value</th><th>Assigned To</th><th></th></tr></thead>
+            <tbody>
+                @foreach (var l in Model)
+                {
+                    <tr>
+                        <td>@l.LeadCode</td>
+                        <td><a asp-action="Details" asp-route-id="@l.Id">@l.LeadName</a></td>
+                        <td>@l.CompanyName</td>
+                        <td>@l.Source</td>
+                        <td><span class="badge bg-secondary">@l.Status</span></td>
+                        <td class="text-end">@l.ExpectedValue.ToString("N2")</td>
+                        <td>@(l.AssignedUser?.UserName ?? "—")</td>
+                        <td class="text-end"><a asp-action="Edit" asp-route-id="@l.Id" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

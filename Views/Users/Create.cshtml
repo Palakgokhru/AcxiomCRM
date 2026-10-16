@@ -1,0 +1,40 @@
+@model AcxiomCRM.Controllers.CreateUserViewModel
+@{
+    ViewData["Title"] = "New User";
+}
+
+<h1 class="h3 mb-3">New User</h1>
+<div class="card shadow-sm" style="max-width:560px">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label"></label>
+                <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                <div class="form-text">At least 8 characters with upper case, lower case, a digit and a symbol.</div>
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="ConfirmPassword" class="form-label"></label>
+                <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Role" class="form-label"></label>
+                <select asp-for="Role" class="form-select" asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(AcxiomCRM.Data.Roles.All))"></select>
+                <span asp-validation-for="Role" class="text-danger small"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Create user</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
