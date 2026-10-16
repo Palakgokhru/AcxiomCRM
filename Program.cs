@@ -39,6 +39,26 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Identity/Account/Login";
     options.AccessDeniedPath = "/Identity/Account/AccessDenied";
 
+    // Hardened auth cookie: not readable from JS, Lax same-site, HTTPS-only outside Development
+    // (Development also runs on plain http://localhost), 8-hour sliding session.
+    options.Cookie.Name = "AcxiomCRM.Auth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    options.SlidingExpiration = true;
+
+    // Audit logout (the login page audits sign-in attempts itself).
+    options.Events.OnSigningOut = async ctx =>
+    {
+        var db = ctx.HttpContext.RequestServices.GetRequiredService<ApplicationDbContext>();
+        db.Audit(ctx.HttpContext.User.Identity?.Name, "Logout", "Account",
+            ctx.HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "-");
+        await db.SaveChangesAsync();
+    };
+
     // API callers get status codes instead of HTML login/access-denied redirects.
     options.Events.OnRedirectToLogin = ctx =>
     {
@@ -65,6 +85,10 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 
+// API actions run the shared CrmRules themselves after binding, so every problem (annotations and
+// business rules) is reported in one 400 response instead of stopping at the first annotation failure.
+builder.Services.Configure<ApiBehaviorOptions>(o => o.SuppressModelStateInvalidFilter = true);
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -82,12 +106,38 @@ await DbSeeder.InitializeAsync(app.Services, app.Configuration);
 
 app.UseHttpsRedirection();
 
-// Self-registration is disabled: accounts are created by an Admin on the Users page.
+// API errors never return HTML or stack traces: unhandled exceptions become a generic JSON 500.
+app.UseWhen(ctx => ctx.Request.Path.StartsWithSegments("/api"), api => api.UseExceptionHandler(handler =>
+    handler.Run(async ctx =>
+    {
+        ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        await ctx.Response.WriteAsJsonAsync(new { title = "An unexpected error occurred.", status = 500 });
+    })));
+
+// Identity UI pages that must not be reachable:
+//  - Register: accounts are created by an Admin on the Users page (no public self-registration).
+//  - Personal-data download/delete, email change, external logins, 2FA and email-based recovery:
+//    users must not delete their own CRM account or change the login an Admin assigned, and the
+//    app has no email sender. Users keep Profile and Change Password.
+string[] blockedIdentityPages =
+[
+    "/Identity/Account/Register", "/Identity/Account/RegisterConfirmation",
+    "/Identity/Account/ExternalLogin", "/Identity/Account/ForgotPassword", "/Identity/Account/ForgotPasswordConfirmation",
+    "/Identity/Account/ResetPassword", "/Identity/Account/ResetPasswordConfirmation",
+    "/Identity/Account/ResendEmailConfirmation", "/Identity/Account/ConfirmEmail", "/Identity/Account/ConfirmEmailChange",
+    "/Identity/Account/LoginWith2fa", "/Identity/Account/LoginWithRecoveryCode",
+    "/Identity/Account/Manage/PersonalData", "/Identity/Account/Manage/DeletePersonalData",
+    "/Identity/Account/Manage/DownloadPersonalData", "/Identity/Account/Manage/Email",
+    "/Identity/Account/Manage/ExternalLogins", "/Identity/Account/Manage/TwoFactorAuthentication",
+    "/Identity/Account/Manage/EnableAuthenticator", "/Identity/Account/Manage/Disable2fa",
+    "/Identity/Account/Manage/ResetAuthenticator", "/Identity/Account/Manage/GenerateRecoveryCodes",
+    "/Identity/Account/Manage/ShowRecoveryCodes", "/Identity/Account/Manage/SetPassword"
+];
 app.Use(async (context, next) =>
 {
-    if (context.Request.Path.StartsWithSegments("/Identity/Account/Register"))
+    if (blockedIdentityPages.Any(p => context.Request.Path.StartsWithSegments(p, StringComparison.OrdinalIgnoreCase)))
     {
-        context.Response.Redirect("/Identity/Account/Login");
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
         return;
     }
     await next();

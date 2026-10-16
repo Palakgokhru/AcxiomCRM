@@ -1,20 +1,33 @@
 @model AcxiomCRM.Models.Customer
 @{
     ViewData["Title"] = Model.CustomerName;
+    var convertedLeads = ViewBag.ConvertedLeads as IEnumerable<Lead> ?? [];
 }
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <h1 class="h3 mb-0">@Model.CustomerName <span class="text-muted fs-5">@Model.CustomerCode</span></h1>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
+        <a asp-controller="Opportunities" asp-action="Create" asp-route-customerId="@Model.Id" class="btn btn-outline-primary">New opportunity</a>
+        <a asp-controller="FollowUps" asp-action="Create" asp-route-customerId="@Model.Id" class="btn btn-outline-primary">Schedule follow-up</a>
+        <a asp-controller="Activities" asp-action="Create" asp-route-customerId="@Model.Id" class="btn btn-outline-primary">Log activity</a>
         <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger">Delete / Deactivate</a>
         <a asp-action="Index" class="btn btn-outline-secondary">Back to list</a>
     </div>
 </div>
 
-@if (TempData["Success"] is string success)
+<partial name="_Alerts" />
+<partial name="_Summary" model="Model" />
+
+@if (convertedLeads.Any())
 {
-    <div class="alert alert-success">@success</div>
+    <p class="small text-muted mt-2 mb-0">
+        Converted from lead:
+        @foreach (var l in convertedLeads)
+        {
+            <a asp-controller="Leads" asp-action="Details" asp-route-id="@l.Id" class="me-2">@l.LeadCode @l.LeadName</a>
+        }
+    </p>
 }
 
-<partial name="_Summary" model="Model" />
+<partial name="_RelatedLists" />

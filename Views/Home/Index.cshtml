@@ -1,29 +1,38 @@
+@model AcxiomCRM.Controllers.DashboardViewModel
 @{
     ViewData["Title"] = "Dashboard";
-    var pending = (List<FollowUp>)ViewBag.PendingFollowUps;
-}
-
-<div class="mb-4">
-    <h1 class="h3 mb-1">Dashboard</h1>
-    <p class="text-muted mb-0">
-        Welcome, @User.Identity?.Name.
-        @(User.IsInRole("SalesExecutive") ? "Figures show records assigned to you." : "Figures show all team records.")
-    </p>
-</div>
-
-@{
+    var scopeText = User.IsInRole("SalesExecutive") ? "your assigned records" : User.IsInRole("Admin") ? "all records (system-wide)" : "all team records";
     var cards = new (string Label, string Value, string Controller, string? Status)[]
     {
-        ("Total Customers", ViewBag.TotalCustomers.ToString(), "Customers", null),
-        ("Total Leads", ViewBag.TotalLeads.ToString(), "Leads", null),
-        ("Open Leads", ViewBag.OpenLeads.ToString(), "Leads", null),
-        ("Total Opportunities", ViewBag.TotalOpportunities.ToString(), "Opportunities", null),
-        ("Open Opportunities", ViewBag.OpenOpportunities.ToString(), "Opportunities", "Open"),
-        ("Won Opportunities", ViewBag.WonOpportunities.ToString(), "Opportunities", null),
-        ("Lost Opportunities", ViewBag.LostOpportunities.ToString(), "Opportunities", null),
-        ("Total Pipeline Value", ((decimal)ViewBag.PipelineValue).ToString("N2"), "Opportunities", "Open"),
+        ("Total Customers", Model.TotalCustomers.ToString("N0"), "Customers", null),
+        ("Total Leads", Model.TotalLeads.ToString("N0"), "Leads", null),
+        ("Open Leads", Model.OpenLeads.ToString("N0"), "Leads", null),
+        ("Total Opportunities", Model.TotalOpportunities.ToString("N0"), "Opportunities", null),
+        ("Open Opportunities", Model.OpenOpportunities.ToString("N0"), "Opportunities", "Open"),
+        ("Won Opportunities", Model.WonOpportunities.ToString("N0"), "Opportunities", null),
+        ("Lost Opportunities", Model.LostOpportunities.ToString("N0"), "Opportunities", null),
+        ("Total Pipeline Value", Model.PipelineValue.ToString("N2"), "Opportunities", "Open"),
     };
 }
+
+<div class="d-flex justify-content-between align-items-end flex-wrap gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">Dashboard</h1>
+        <p class="text-muted mb-0 small">Welcome, @User.Identity?.Name. Figures cover @scopeText &middot; period: <strong>@Model.Range.Label</strong> (by created date).</p>
+    </div>
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+        <select name="preset" class="form-select form-select-sm" id="preset" style="width:auto" aria-label="Period">
+            @foreach (var (key, label) in DateRange.Presets)
+            {
+                <option value="@key" selected="@(key == Model.Range.Preset)">@label</option>
+            }
+        </select>
+        <input type="date" name="from" id="from" class="form-control form-control-sm" style="width:auto" value="@Model.Range.From?.ToString("yyyy-MM-dd")" aria-label="From" />
+        <input type="date" name="to" id="to" class="form-control form-control-sm" style="width:auto" value="@Model.Range.To?.ToString("yyyy-MM-dd")" aria-label="To" />
+        <button class="btn btn-sm btn-primary">Apply</button>
+    </form>
+</div>
+
 <div class="row g-3 mb-4">
     @foreach (var c in cards)
     {
@@ -38,42 +47,65 @@
     }
 </div>
 
+@if (Model.AdminStats is not null)
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between">
+            <h2 class="h6 mb-0">Administration</h2>
+            <span class="small"><a asp-controller="Users" asp-action="Index">Users</a> &middot; <a asp-controller="AuditLog" asp-action="Index">Audit Log</a></span>
+        </div>
+        <div class="card-body row g-3">
+            @foreach (var (label, value) in Model.AdminStats)
+            {
+                <div class="col-6 col-md-3"><div class="text-muted small">@label</div><div class="fs-5 fw-semibold" data-admin="@label">@value</div></div>
+            }
+        </div>
+    </div>
+}
+
 <div class="row g-3 mb-4">
-    <div class="col-md-6">
+    <div class="col-lg-4">
         <div class="card shadow-sm h-100"><div class="card-body">
-            <h2 class="h6">Opportunities by stage</h2>
-            <canvas id="stageChart" height="220"></canvas>
+            <h2 class="h6">Lead status</h2>
+            <div class="chart-box"><canvas id="leadChart"></canvas></div>
         </div></div>
     </div>
-    <div class="col-md-6">
+    <div class="col-lg-4">
         <div class="card shadow-sm h-100"><div class="card-body">
-            <h2 class="h6">Leads by status</h2>
-            <canvas id="leadChart" height="220"></canvas>
+            <h2 class="h6">Opportunity pipeline</h2>
+            <div class="chart-box"><canvas id="stageChart"></canvas></div>
+        </div></div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100"><div class="card-body">
+            <h2 class="h6">Monthly outcomes <span class="text-muted small">(last @Model.MonthLabels.Length months)</span></h2>
+            <div class="chart-box"><canvas id="monthlyChart"></canvas></div>
         </div></div>
     </div>
 </div>
+<p id="chartFallback" class="small text-muted d-none">Charts could not load (Chart.js CDN unreachable). The figures above are unaffected.</p>
 
 <div class="card shadow-sm">
     <div class="card-header d-flex justify-content-between align-items-center bg-white">
         <h2 class="h6 mb-0">Pending follow-ups (overdue and next 14 days)</h2>
         <a asp-controller="FollowUps" asp-action="Index" class="small">View all</a>
     </div>
-    @if (pending.Count == 0)
+    @if (Model.PendingFollowUps.Count == 0)
     {
         <div class="card-body text-muted small">No pending follow-ups.</div>
     }
     else
     {
         <ul class="list-group list-group-flush">
-            @foreach (var f in pending)
+            @foreach (var f in Model.PendingFollowUps)
             {
                 var overdue = f.FollowUpDate.Date < DateTime.Today;
                 <li class="list-group-item d-flex justify-content-between">
-                    <span>
+                    <a asp-controller="FollowUps" asp-action="Details" asp-route-id="@f.Id" class="text-decoration-none text-body">
                         <strong>@f.FollowUpDate.ToString("dd MMM")</strong> &middot; @f.FollowUpType &middot;
                         @(f.Customer?.CustomerName ?? f.Lead?.LeadName ?? f.Opportunity?.OpportunityName)
                         <span class="text-muted small">@f.Remarks</span>
-                    </span>
+                    </a>
                     @if (overdue) { <span class="badge bg-danger align-self-center">Overdue</span> }
                     else if (f.FollowUpDate.Date == DateTime.Today) { <span class="badge bg-warning text-dark align-self-center">Today</span> }
                 </li>
@@ -82,22 +114,53 @@
     }
 </div>
 
+<style>
+    .chart-box { position: relative; height: 260px; }
+</style>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
     <script>
+        // Chart data comes from the server-side DashboardViewModel (scoped database queries).
+        window.dashboardData = {
+            leadLabels: @Json.Serialize(LeadStatus.All), leadCounts: @Json.Serialize(Model.LeadStatusCounts),
+            stageLabels: @Json.Serialize(OpportunityStage.All), stageCounts: @Json.Serialize(Model.StageCounts),
+            months: @Json.Serialize(Model.MonthLabels), wonAmount: @Json.Serialize(Model.MonthlyWonAmount),
+            wonCount: @Json.Serialize(Model.MonthlyWonCount), lostCount: @Json.Serialize(Model.MonthlyLostCount),
+            newLeads: @Json.Serialize(Model.MonthlyNewLeads)
+        };
         (function () {
-            if (typeof Chart === "undefined") return; // CDN unavailable: cards above still show the figures
-            const opts = { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } };
-            new Chart(document.getElementById("stageChart"), {
-                type: "bar",
-                data: { labels: @Json.Serialize(ViewBag.StageLabels), datasets: [{ data: @Json.Serialize(ViewBag.StageCounts), backgroundColor: "#0d6efd" }] },
-                options: opts
-            });
-            new Chart(document.getElementById("leadChart"), {
-                type: "bar",
-                data: { labels: @Json.Serialize(ViewBag.LeadStatusLabels), datasets: [{ data: @Json.Serialize(ViewBag.LeadStatusCounts), backgroundColor: "#198754" }] },
-                options: opts
-            });
+            document.getElementById("from").addEventListener("change", () => document.getElementById("preset").value = "custom");
+            document.getElementById("to").addEventListener("change", () => document.getElementById("preset").value = "custom");
+            if (typeof Chart === "undefined") { document.getElementById("chartFallback").classList.remove("d-none"); return; }
+            const d = window.dashboardData;
+            const countAxis = { beginAtZero: true, ticks: { precision: 0 } };
+            // Fixed-height containers (.chart-box) + maintainAspectRatio:false keep charts readable at any width.
+            Chart.defaults.maintainAspectRatio = false;
+            window.dashboardCharts = [
+                new Chart(document.getElementById("leadChart"), {
+                    type: "doughnut",
+                    data: { labels: d.leadLabels, datasets: [{ data: d.leadCounts,
+                        backgroundColor: ["#0d6efd", "#6f42c1", "#20c997", "#adb5bd", "#198754", "#dc3545"] }] },
+                    options: { plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } } } }
+                }),
+                new Chart(document.getElementById("stageChart"), {
+                    type: "bar",
+                    data: { labels: d.stageLabels, datasets: [{ label: "Opportunities", data: d.stageCounts,
+                        backgroundColor: ["#0d6efd", "#6610f2", "#fd7e14", "#198754", "#dc3545"] }] },
+                    options: { plugins: { legend: { display: false } }, scales: { y: countAxis } }
+                }),
+                new Chart(document.getElementById("monthlyChart"), {
+                    data: { labels: d.months, datasets: [
+                        { type: "bar", label: "Won amount", data: d.wonAmount, backgroundColor: "#198754", yAxisID: "y" },
+                        { type: "line", label: "Won deals", data: d.wonCount, borderColor: "#0d6efd", yAxisID: "y1" },
+                        { type: "line", label: "Lost deals", data: d.lostCount, borderColor: "#dc3545", yAxisID: "y1" },
+                        { type: "line", label: "New leads", data: d.newLeads, borderColor: "#6c757d", borderDash: [4, 4], yAxisID: "y1" }
+                    ] },
+                    options: { plugins: { legend: { position: "bottom", labels: { boxWidth: 12 } } },
+                        scales: { y: { beginAtZero: true, position: "left" }, y1: { ...countAxis, position: "right", grid: { drawOnChartArea: false } } } }
+                })
+            ];
         })();
     </script>
 }

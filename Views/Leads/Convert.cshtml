@@ -1,0 +1,57 @@
+@model Lead
+@{
+    ViewData["Title"] = "Convert Lead";
+    var match = ViewBag.Match as Customer;
+    var hidden = ViewBag.MatchHidden == true;
+}
+
+<h1 class="h3 mb-3">Convert @Model.LeadName <span class="text-muted fs-5">@Model.LeadCode</span></h1>
+<div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+<partial name="_Alerts" />
+
+<div class="card shadow-sm mb-3"><div class="card-body">
+    <dl class="row mb-0">
+        <dt class="col-sm-3">Email</dt><dd class="col-sm-9">@(Model.Email ?? "—")</dd>
+        <dt class="col-sm-3">Phone</dt><dd class="col-sm-9">@(Model.Phone ?? "—")</dd>
+        <dt class="col-sm-3">Company</dt><dd class="col-sm-9">@(Model.CompanyName ?? "—")</dd>
+        <dt class="col-sm-3">Expected Value</dt><dd class="col-sm-9">@Model.ExpectedValue.ToString("N2")</dd>
+    </dl>
+</div></div>
+
+@if (hidden)
+{
+    <div class="alert alert-warning">
+        A customer with this lead's email or phone already exists but is assigned to another user.
+        To avoid a duplicate, this lead cannot be converted by you &mdash; ask a manager.
+    </div>
+    <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Back</a>
+}
+else
+{
+    @if (match is not null)
+    {
+        <div class="alert alert-info">
+            An existing customer matches this lead's email or phone:
+            <a asp-controller="Customers" asp-action="Details" asp-route-id="@match.Id" class="alert-link">@match.CustomerCode @match.CustomerName</a>.
+            Converting will <strong>link the lead to this customer</strong> instead of creating a duplicate.
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-light border">
+            No existing customer matches. Converting will <strong>create a new customer</strong> from this lead
+            (requires both email and phone).
+        </div>
+    }
+    <form asp-action="Convert" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Convert this lead? Its status becomes Converted.');">
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" name="createOpportunity" value="true" id="createOpportunity" checked="@(Model.ExpectedValue > 0)" disabled="@(Model.ExpectedValue <= 0)" />
+            <label class="form-check-label" for="createOpportunity">
+                Also create an Open opportunity for @Model.ExpectedValue.ToString("N2") (expected close in 30 days)
+                @if (Model.ExpectedValue <= 0) { <span class="text-muted">&mdash; not available: expected value is 0</span> }
+            </label>
+        </div>
+        <button type="submit" class="btn btn-success">@(match is null ? "Convert and create customer" : "Convert and link to existing customer")</button>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Cancel</a>
+    </form>
+}

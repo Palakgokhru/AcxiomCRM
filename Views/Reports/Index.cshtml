@@ -1,0 +1,32 @@
+@{
+    ViewData["Title"] = "Reports";
+    var reports = new List<(string Action, string Title, string Text)>
+    {
+        ("Customers", "Customers", "Customers by status and owner, with created date filter."),
+        ("Leads", "Leads", "Leads by status and source with expected value."),
+        ("FollowUps", "Follow-ups", "Planned, overdue and completed follow-ups by date."),
+        ("Opportunities", "Opportunities", "Opportunities by stage and status with amounts."),
+        ("Pipeline", "Pipeline", "Open pipeline and weighted value by stage and owner."),
+        ("LeadConversion", "Lead conversion", "Conversion rate by source and owner; converted leads."),
+        ("UserActivity", "User activity", "Activities, follow-ups, records created and sign-ins per user."),
+    };
+    if (User.IsInRole("Admin")) reports.Add(("Audit", "Audit events", "Audit events by entity, action and user (Admin only)."));
+}
+
+<h1 class="h3 mb-1">Reports</h1>
+<p class="text-muted">
+    @(User.IsInRole("Admin") ? "System-wide figures." : "Team figures.") Each report has date presets, filters and CSV export.
+</p>
+<div class="row g-3">
+    @foreach (var r in reports)
+    {
+        <div class="col-md-6 col-lg-4">
+            <a asp-action="@r.Action" class="card shadow-sm h-100 text-decoration-none">
+                <div class="card-body">
+                    <h2 class="h6 text-body">@r.Title</h2>
+                    <p class="small text-muted mb-0">@r.Text</p>
+                </div>
+            </a>
+        </div>
+    }
+</div>

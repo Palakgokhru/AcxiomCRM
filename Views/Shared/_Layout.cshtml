@@ -20,7 +20,7 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse" id="mainNav">
-                    @* Only Reports is still a placeholder. *@
+                    
                     <ul class="navbar-nav me-auto">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
@@ -32,7 +32,7 @@
                             <li class="nav-item"><a class="nav-link" asp-controller="Activities" asp-action="Index">Activities</a></li>
                             @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
                             {
-                                <li class="nav-item"><a class="nav-link" asp-controller="Modules" asp-action="Reports">Reports</a></li>
+                                <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Index">Reports</a></li>
                             }
                             @if (User.IsInRole("Admin"))
                             {

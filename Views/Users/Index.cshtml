@@ -8,8 +8,7 @@
     <a asp-action="Create" class="btn btn-primary">+ New User</a>
 </div>
 
-@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
-@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+<partial name="_Alerts" />
 
 <div class="table-responsive">
     <table class="table align-middle bg-white">
@@ -22,7 +21,7 @@
                     <td>@(string.IsNullOrEmpty(u.Role) ? "(none)" : u.Role)</td>
                     <td>@(u.IsLockedOut ? "Locked" : "Active")</td>
                     <td>
-                        <form asp-action="SetRole" asp-route-id="@u.Id" method="post" class="d-flex gap-1">
+                        <form asp-action="SetRole" asp-route-id="@u.Id" method="post" class="d-flex gap-1" onsubmit="return confirm('Change the role of this user?');">
                             <select name="role" class="form-select form-select-sm" style="max-width:160px">
                                 @foreach (var r in AcxiomCRM.Data.Roles.All)
                                 {
@@ -33,7 +32,7 @@
                         </form>
                     </td>
                     <td>
-                        <form asp-action="ToggleLock" asp-route-id="@u.Id" method="post">
+                        <form asp-action="ToggleLock" asp-route-id="@u.Id" method="post" onsubmit="return confirm('@(u.IsLockedOut ? "Unlock" : "Lock") this account?');">
                             <button type="submit" class="btn btn-sm @(u.IsLockedOut ? "btn-outline-success" : "btn-outline-warning")">@(u.IsLockedOut ? "Unlock" : "Lock")</button>
                         </form>
                     </td>

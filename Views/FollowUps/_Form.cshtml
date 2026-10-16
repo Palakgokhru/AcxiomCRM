@@ -1,12 +1,18 @@
 @model FollowUp
 @using Microsoft.AspNetCore.Mvc.Rendering
+@{
+    var isCreate = Model.Id == 0;
+    var historical = ViewBag.Historical == true;
+    var canHistorical = isCreate && (User.IsInRole("Admin") || User.IsInRole("Manager"));
+}
 
 <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 <div class="row g-3">
     <partial name="_RelatedFields" model="(Model.CustomerId, Model.LeadId, Model.OpportunityId)" />
     <div class="col-md-4">
         <label asp-for="FollowUpDate" class="form-label"></label>
-        <input asp-for="FollowUpDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+        <input asp-for="FollowUpDate" class="form-control" id="FollowUpDate"
+               min="@(historical ? null : DateTime.Today.ToString("yyyy-MM-dd"))" />
         <span asp-validation-for="FollowUpDate" class="text-danger small"></span>
     </div>
     <div class="col-md-4">
@@ -15,9 +21,28 @@
         <span asp-validation-for="FollowUpType" class="text-danger small"></span>
     </div>
     <div class="col-md-4">
-        <label asp-for="Status" class="form-label"></label>
-        <select asp-for="Status" asp-items="new SelectList(FollowUpStatus.All)" class="form-select"></select>
-        <span asp-validation-for="Status" class="text-danger small"></span>
+        @if (canHistorical)
+        {
+            @* Historical entry (Admin/Manager): records a past follow-up with its outcome. *@
+            <div class="form-check mt-4">
+                <input class="form-check-input" type="checkbox" name="historical" value="true" id="historical" checked="@historical" />
+                <label class="form-check-label" for="historical">Historical entry (already happened)</label>
+            </div>
+            <div id="historicalStatus" class="mt-2" style="@(historical ? "" : "display:none")">
+                <select name="Status" class="form-select" id="Status" disabled="@(!historical)">
+                    @foreach (var s in new[] { "Completed", "Missed", "Cancelled" })
+                    {
+                        <option value="@s" selected="@(s == Model.Status)">@s</option>
+                    }
+                </select>
+                <span asp-validation-for="Status" class="text-danger small"></span>
+            </div>
+        }
+        else
+        {
+            <label class="form-label">Status</label>
+            <input class="form-control" value="Planned" disabled />
+        }
     </div>
     <div class="col-12">
         <label asp-for="Remarks" class="form-label"></label>
@@ -26,3 +51,17 @@
     </div>
     <partial name="_AssignField" model="Model.AssignedUserId" />
 </div>
+
+@if (canHistorical)
+{
+    <script>
+        document.getElementById("historical").addEventListener("change", function () {
+            const on = this.checked;
+            document.getElementById("historicalStatus").style.display = on ? "" : "none";
+            document.getElementById("Status").disabled = !on;
+            const date = document.getElementById("FollowUpDate");
+            if (on) { date.removeAttribute("min"); date.max = new Date().toISOString().slice(0, 10); }
+            else { date.removeAttribute("max"); date.min = new Date().toISOString().slice(0, 10); }
+        });
+    </script>
+}

@@ -2,23 +2,38 @@
 @{
     ViewData["Title"] = "Activities";
     var type = ViewData["Type"] as string;
+    var status = ViewData["Status"] as string;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Activities</h1>
     <a asp-action="Create" class="btn btn-primary">+ Log Activity</a>
 </div>
-@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+<partial name="_Alerts" />
 
-<ul class="nav nav-pills mb-3">
-    <li class="nav-item"><a class="nav-link @(string.IsNullOrEmpty(type) ? "active" : "")" asp-action="Index">All</a></li>
-    @foreach (var t in ActivityTypes.All)
-    {
-        <li class="nav-item"><a class="nav-link @(t == type ? "active" : "")" asp-action="Index" asp-route-type="@t">@t</a></li>
-    }
-</ul>
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2">
+        <select name="type" class="form-select" aria-label="Type">
+            <option value="">All types</option>
+            @foreach (var t in ActivityTypes.All) { <option value="@t" selected="@(t == type)">@t</option> }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="status" class="form-select" aria-label="Status">
+            <option value="">All statuses</option>
+            @foreach (var s in ActivityStatus.All) { <option value="@s" selected="@(s == status)">@s</option> }
+        </select>
+    </div>
+    <div class="col-md-2"><input type="date" name="from" value="@ViewData["From"]" class="form-control" aria-label="From date" /></div>
+    <div class="col-md-2"><input type="date" name="to" value="@ViewData["To"]" class="form-control" aria-label="To date" /></div>
+    <partial name="_AssignedFilter" />
+    <div class="col-md-1 d-flex gap-2">
+        <button class="btn btn-outline-primary">Filter</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Clear</a>
+    </div>
+</form>
 
-@if (!Model.Any()) { <div class="alert alert-light border">No activities.</div> }
+@if (!Model.Any()) { <div class="alert alert-light border">No activities match.</div> }
 else
 {
     <div class="table-responsive">
@@ -30,14 +45,15 @@ else
                     <tr>
                         <td class="text-nowrap">@a.ActivityDate.ToString("dd MMM yyyy")</td>
                         <td>@a.ActivityType</td>
-                        <td>@a.Subject</td>
+                        <td><a asp-action="Details" asp-route-id="@a.Id">@a.Subject</a></td>
                         <td class="small">@(a.Customer?.CustomerName ?? a.Lead?.LeadName ?? a.Opportunity?.OpportunityName)</td>
                         <td>@a.Status</td>
                         <td>@(a.AssignedUser?.UserName ?? "—")</td>
-                        <td class="text-end">
+                        <td class="text-end text-nowrap">
+                            <a asp-action="Edit" asp-route-id="@a.Id" class="btn btn-sm btn-outline-primary">Edit</a>
                             @if (a.Status == "Planned")
                             {
-                                <form asp-action="Complete" asp-route-id="@a.Id" method="post"><button class="btn btn-sm btn-success">Complete</button></form>
+                                <form asp-action="Complete" asp-route-id="@a.Id" method="post" class="d-inline"><button class="btn btn-sm btn-success">Complete</button></form>
                             }
                         </td>
                     </tr>

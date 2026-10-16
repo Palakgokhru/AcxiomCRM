@@ -33,17 +33,27 @@ public static class DbSeeder
                 await roleManager.CreateAsync(new IdentityRole(role));
         }
 
-        // "SeedUsers" section: [{ "Email": "...", "Password": "...", "Role": "Admin" }]
+        // "SeedUsers" section: [{ "Email": "...", "Role": "Admin" }] in appsettings.Development.json;
+        // each "SeedUsers:N:Password" comes from user-secrets / environment variables (never committed).
         var userManager = provider.GetRequiredService<UserManager<IdentityUser>>();
+        var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
         foreach (var seed in config.GetSection("SeedUsers").GetChildren())
         {
             var email = seed["Email"];
             var password = seed["Password"];
             var role = seed["Role"];
-            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password) || !Roles.All.Contains(role))
+            if (string.IsNullOrWhiteSpace(email) || !Roles.All.Contains(role))
                 continue;
 
-            var user = await userManager.FindByEmailAsync(email);
+            var existing = await userManager.FindByEmailAsync(email);
+            if (existing is null && string.IsNullOrWhiteSpace(password))
+            {
+                // Passwords never live in source control; they come from user-secrets or environment variables.
+                logger.LogWarning("Seed user {Email} skipped: no password configured (SeedUsers:{Index}:Password). See README.", email, seed.Key);
+                continue;
+            }
+
+            var user = existing;
             if (user is null)
             {
                 user = new IdentityUser { UserName = email, Email = email, EmailConfirmed = true };

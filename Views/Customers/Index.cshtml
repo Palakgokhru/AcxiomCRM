@@ -10,16 +10,14 @@
     <a asp-action="Create" class="btn btn-primary">+ New Customer</a>
 </div>
 
-@if (TempData["Success"] is string success)
-{
-    <div class="alert alert-success">@success</div>
-}
+<partial name="_Alerts" />
 
 <form method="get" class="row g-2 mb-3">
-    <div class="col-md-6">
+    <div class="col-md-5">
         <input name="search" value="@search" class="form-control" placeholder="Search name, email, phone, company or code" />
     </div>
-    <div class="col-md-3">
+    <partial name="_AssignedFilter" />
+    <div class="col-md-2">
         <select name="status" class="form-select">
             <option value="">All statuses</option>
             @foreach (var s in AcxiomCRM.Models.CustomerStatus.All)
@@ -28,7 +26,7 @@
             }
         </select>
     </div>
-    <div class="col-md-3 d-flex gap-2">
+    <div class="col-md-2 d-flex gap-2">
         <button type="submit" class="btn btn-outline-primary">Search</button>
         <a asp-action="Index" class="btn btn-outline-secondary">Clear</a>
     </div>

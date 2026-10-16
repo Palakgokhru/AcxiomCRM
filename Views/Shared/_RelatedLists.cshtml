@@ -1,0 +1,56 @@
+@* Related opportunities / follow-ups / activities for a details page. Lists arrive already scoped to the user. *@
+@{
+    var opps = ViewBag.Opportunities as IEnumerable<Opportunity>;
+    var followUps = ViewBag.FollowUps as IEnumerable<FollowUp>;
+    var activities = ViewBag.Activities as IEnumerable<Activity>;
+}
+<div class="row g-3 mt-1">
+    @if (opps is not null)
+    {
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white fw-semibold small">Opportunities (@opps.Count())</div>
+                <ul class="list-group list-group-flush small">
+                    @foreach (var o in opps)
+                    {
+                        <li class="list-group-item d-flex justify-content-between">
+                            <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@o.Id">@o.OpportunityName</a>
+                            <span class="text-muted">@o.Stage &middot; @o.Amount.ToString("N0")</span>
+                        </li>
+                    }
+                    @if (!opps.Any()) { <li class="list-group-item text-muted">None</li> }
+                </ul>
+            </div>
+        </div>
+    }
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold small">Follow-ups (@(followUps?.Count() ?? 0))</div>
+            <ul class="list-group list-group-flush small">
+                @foreach (var f in followUps ?? [])
+                {
+                    <li class="list-group-item d-flex justify-content-between">
+                        <a asp-controller="FollowUps" asp-action="Details" asp-route-id="@f.Id">@f.FollowUpDate.ToString("dd MMM yyyy") &middot; @f.FollowUpType</a>
+                        <span class="badge @(f.Status == "Planned" && f.FollowUpDate.Date < DateTime.Today ? "bg-danger" : "bg-secondary")">@f.Status</span>
+                    </li>
+                }
+                @if (followUps is null || !followUps.Any()) { <li class="list-group-item text-muted">None</li> }
+            </ul>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-white fw-semibold small">Activities (@(activities?.Count() ?? 0))</div>
+            <ul class="list-group list-group-flush small">
+                @foreach (var a in activities ?? [])
+                {
+                    <li class="list-group-item d-flex justify-content-between">
+                        <a asp-controller="Activities" asp-action="Details" asp-route-id="@a.Id">@a.ActivityDate.ToString("dd MMM yyyy") &middot; @a.ActivityType: @a.Subject</a>
+                        <span class="text-muted">@a.Status</span>
+                    </li>
+                }
+                @if (activities is null || !activities.Any()) { <li class="list-group-item text-muted">None</li> }
+            </ul>
+        </div>
+    </div>
+</div>

@@ -5,16 +5,30 @@
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <h1 class="h3 mb-0">@Model.OpportunityName</h1>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
         <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Edit</a>
         <a asp-controller="FollowUps" asp-action="Create" asp-route-opportunityId="@Model.Id" asp-route-customerId="@Model.CustomerId" class="btn btn-outline-primary">Schedule follow-up</a>
+        <a asp-controller="Activities" asp-action="Create" asp-route-opportunityId="@Model.Id" asp-route-customerId="@Model.CustomerId" class="btn btn-outline-primary">Log activity</a>
+        @if (Model.Status == "Open")
+        {
+            <form asp-action="Deactivate" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Close this opportunity as Lost?');">
+                <button class="btn btn-outline-warning">Close as Lost</button>
+            </form>
+        }
+        @if (User.IsInRole("Admin"))
+        {
+            <form asp-action="Delete" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Permanently delete this opportunity? This cannot be undone.');">
+                <button class="btn btn-outline-danger">Delete</button>
+            </form>
+        }
         <a asp-action="Index" class="btn btn-outline-secondary">Back</a>
     </div>
 </div>
-@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+<partial name="_Alerts" />
 
 <div class="card shadow-sm"><div class="card-body">
     <dl class="row mb-0">
+        <dt class="col-sm-3">Opportunity Id</dt><dd class="col-sm-9">@Model.Id</dd>
         <dt class="col-sm-3">Customer</dt>
         <dd class="col-sm-9"><a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId">@Model.Customer?.CustomerName</a></dd>
         <dt class="col-sm-3">Lead</dt>
@@ -30,3 +44,5 @@
         <dt class="col-sm-3">Created</dt><dd class="col-sm-9">@Model.CreatedDate.ToLocalTime().ToString("dd MMM yyyy HH:mm") by @Model.CreatedBy</dd>
     </dl>
 </div></div>
+
+<partial name="_RelatedLists" />

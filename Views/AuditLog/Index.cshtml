@@ -1,26 +1,67 @@
 @model IEnumerable<AcxiomCRM.Models.AuditLog>
 @{
     ViewData["Title"] = "Audit Log";
+    var range = (DateRange)ViewBag.Range;
+    int total = ViewBag.Total, page = ViewBag.Page;
+    var pages = Math.Max(1, (int)Math.Ceiling(total / (double)AcxiomCRM.Controllers.AuditLogController.PageSize));
+    var entity = ViewData["Entity"] as string;
+    var act = ViewData["Act"] as string;
+    var routeBase = Context.Request.Query.ToDictionary(k => k.Key, v => v.Value.ToString());
 }
 
-<h1 class="h3 mb-3">Audit Log</h1>
-<p class="text-muted small">Most recent 500 entries. Times are UTC. Passwords and security tokens are never logged.</p>
+<h1 class="h3 mb-1">Audit Log</h1>
+<p class="text-muted small">Times are UTC. Entries are append-only. Passwords, hashes and security tokens are never logged.</p>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-2">
+        <label class="form-label small mb-0" for="user">User</label>
+        <input name="user" id="user" value="@ViewData["User"]" class="form-control" placeholder="email contains…" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small mb-0">Module / entity</label>
+        <select name="entity" class="form-select">
+            <option value="">Any</option>
+            @foreach (string e in ViewBag.Entities) { <option value="@e" selected="@(e == entity)">@e</option> }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small mb-0">Action</label>
+        <select name="act" class="form-select">
+            <option value="">Any</option>
+            @foreach (string a in ViewBag.Actions) { <option value="@a" selected="@(a == act)">@a</option> }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small mb-0">Period</label>
+        <select name="preset" class="form-select">
+            @foreach (var (key, label) in DateRange.Presets) { <option value="@key" selected="@(key == range.Preset)">@label</option> }
+        </select>
+    </div>
+    <div class="col-md-1"><label class="form-label small mb-0">From</label><input type="date" name="from" value="@range.From?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+    <div class="col-md-1"><label class="form-label small mb-0">To</label><input type="date" name="to" value="@range.To?.ToString("yyyy-MM-dd")" class="form-control" /></div>
+    <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-primary">Filter</button>
+        <a asp-action="Index" class="btn btn-outline-secondary">Reset</a>
+    </div>
+</form>
+<p class="small text-muted">@total entr@(total == 1 ? "y" : "ies") &middot; @range.Label</p>
 
 @if (!Model.Any())
 {
-    <div class="alert alert-light border">No audit entries yet.</div>
+    <div class="alert alert-light border">No audit entries match.</div>
 }
 else
 {
     <div class="table-responsive">
         <table class="table table-sm bg-white small align-top">
             <thead class="table-light">
-                <tr><th>When (UTC)</th><th>User</th><th>Action</th><th>Entity</th><th>Record</th><th>Old value</th><th>New value</th><th>IP</th></tr>
+                <tr><th>Id</th><th>When (UTC)</th><th>User</th><th>Action</th><th>Entity</th><th>Record</th><th>Old value</th><th>New value</th><th>IP</th></tr>
             </thead>
             <tbody>
                 @foreach (var a in Model)
                 {
                     <tr class="@(a.Action is "LoginFailed" or "LoginLockedOut" ? "table-warning" : "")">
+                        <td>@a.AuditLogId</td>
                         <td class="text-nowrap">@a.CreatedDate.ToString("yyyy-MM-dd HH:mm:ss")</td>
                         <td>@a.UserName<div class="text-muted" style="font-size:.7rem">@a.UserId</div></td>
                         <td>@a.Action</td>
@@ -34,4 +75,14 @@ else
             </tbody>
         </table>
     </div>
+    @if (pages > 1)
+    {
+        <nav><ul class="pagination pagination-sm">
+            @for (var p = 1; p <= pages; p++)
+            {
+                var r = new Dictionary<string, string>(routeBase) { ["page"] = p.ToString() };
+                <li class="page-item @(p == page ? "active" : "")"><a class="page-link" asp-action="Index" asp-all-route-data="r">@p</a></li>
+            }
+        </ul></nav>
+    }
 }

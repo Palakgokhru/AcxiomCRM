@@ -1,0 +1,15 @@
+@* Success / error notifications set by controllers through TempData. *@
+@if (TempData["Success"] is string success)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @success
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @error
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}

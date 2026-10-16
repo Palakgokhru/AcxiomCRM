@@ -8,17 +8,18 @@
     <h1 class="h3 mb-0">Leads</h1>
     <a asp-action="Create" class="btn btn-primary">+ New Lead</a>
 </div>
-@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+<partial name="_Alerts" />
 
 <form method="get" class="row g-2 mb-3">
-    <div class="col-md-6"><input name="search" value="@ViewData["Search"]" class="form-control" placeholder="Search name, code, email, phone, company" /></div>
+    <div class="col-md-4"><input name="search" value="@ViewData["Search"]" class="form-control" placeholder="Search name, code, email, phone, company" /></div>
+    <partial name="_AssignedFilter" />
     <div class="col-md-3">
         <select name="status" class="form-select">
             <option value="">All statuses</option>
             @foreach (var s in LeadStatus.All) { <option value="@s" selected="@(s == status)">@s</option> }
         </select>
     </div>
-    <div class="col-md-3 d-flex gap-2">
+    <div class="col-md-2 d-flex gap-2">
         <button class="btn btn-outline-primary">Filter</button>
         <a asp-action="Index" class="btn btn-outline-secondary">Clear</a>
     </div>

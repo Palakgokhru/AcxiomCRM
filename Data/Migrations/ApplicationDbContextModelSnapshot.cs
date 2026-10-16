@@ -45,6 +45,10 @@ namespace AcxiomCRM.Data.Migrations
                     b.Property<int?>("CustomerId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("LeadId")
                         .HasColumnType("INTEGER");
 
@@ -76,9 +80,10 @@ namespace AcxiomCRM.Data.Migrations
 
             modelBuilder.Entity("AcxiomCRM.Models.AuditLog", b =>
                 {
-                    b.Property<int>("Id")
+                    b.Property<int>("AuditLogId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("Id");
 
                     b.Property<string>("Action")
                         .IsRequired()
@@ -127,7 +132,7 @@ namespace AcxiomCRM.Data.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("TEXT");
 
-                    b.HasKey("Id");
+                    b.HasKey("AuditLogId");
 
                     b.HasIndex("CreatedDate");
 
@@ -141,7 +146,6 @@ namespace AcxiomCRM.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasMaxLength(250)
                         .HasColumnType("TEXT");
 
@@ -149,12 +153,10 @@ namespace AcxiomCRM.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("City")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("CompanyName")
-                        .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("TEXT");
 
@@ -187,7 +189,6 @@ namespace AcxiomCRM.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("State")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
@@ -207,9 +208,6 @@ namespace AcxiomCRM.Data.Migrations
                         .IsUnique();
 
                     b.HasIndex("Phone")
-                        .IsUnique();
-
-                    b.HasIndex("CustomerName", "CompanyName")
                         .IsUnique();
 
                     b.ToTable("Customers");
@@ -286,6 +284,12 @@ namespace AcxiomCRM.Data.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("ConvertedCustomerId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("ConvertedDate")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CreatedBy")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -328,6 +332,8 @@ namespace AcxiomCRM.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AssignedUserId");
+
+                    b.HasIndex("ConvertedCustomerId");
 
                     b.HasIndex("LeadCode")
                         .IsUnique();
@@ -668,7 +674,14 @@ namespace AcxiomCRM.Data.Migrations
                         .HasForeignKey("AssignedUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("AcxiomCRM.Models.Customer", "ConvertedCustomer")
+                        .WithMany()
+                        .HasForeignKey("ConvertedCustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("AssignedUser");
+
+                    b.Navigation("ConvertedCustomer");
                 });
 
             modelBuilder.Entity("AcxiomCRM.Models.Opportunity", b =>

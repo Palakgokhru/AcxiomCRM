@@ -1,25 +1,39 @@
 @model IEnumerable<FollowUp>
 @{
     ViewData["Title"] = "Follow-ups";
-    var status = ViewData["Status"] as string;
+    var view = ViewData["View"] as string;
+    var views = new[] { ("Pending", "Pending"), ("Overdue", "Overdue"), ("Upcoming", "Next 7 days"),
+                        ("Completed", "Completed"), ("Missed", "Missed"), ("Cancelled", "Cancelled"), ("All", "All") };
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1 class="h3 mb-0">Follow-ups</h1>
     <a asp-action="Create" class="btn btn-primary">+ Schedule Follow-up</a>
 </div>
-@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+<partial name="_Alerts" />
 
-<ul class="nav nav-pills mb-3">
-    @foreach (var s in FollowUpStatus.All.Append("All"))
+<ul class="nav nav-pills mb-3 flex-wrap">
+    @foreach (var (key, label) in views)
     {
         <li class="nav-item">
-            <a class="nav-link @(s == status ? "active" : "")" asp-action="Index" asp-route-status="@s">@(s == "Planned" ? "Pending (Planned)" : s)</a>
+            <a class="nav-link @(key == view ? "active" : "")" asp-action="Index" asp-route-view="@key">@label</a>
         </li>
     }
 </ul>
 
-@if (!Model.Any()) { <div class="alert alert-light border">No follow-ups.</div> }
+<form method="get" class="row g-2 mb-3">
+    <input type="hidden" name="view" value="@view" />
+    <div class="col-md-3"><input name="related" value="@ViewData["Related"]" class="form-control" placeholder="Customer, lead or opportunity" /></div>
+    <div class="col-md-2"><input type="date" name="from" value="@ViewData["From"]" class="form-control" aria-label="From date" /></div>
+    <div class="col-md-2"><input type="date" name="to" value="@ViewData["To"]" class="form-control" aria-label="To date" /></div>
+    <partial name="_AssignedFilter" />
+    <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-outline-primary">Filter</button>
+        <a asp-action="Index" asp-route-view="@view" class="btn btn-outline-secondary">Clear</a>
+    </div>
+</form>
+
+@if (!Model.Any()) { <div class="alert alert-light border">No follow-ups match.</div> }
 else
 {
     <div class="table-responsive">
@@ -30,7 +44,7 @@ else
                 {
                     var overdue = f.Status == "Planned" && f.FollowUpDate.Date < DateTime.Today;
                     <tr class="@(overdue ? "table-danger" : f.Status == "Planned" && f.FollowUpDate.Date == DateTime.Today ? "table-warning" : "")">
-                        <td class="text-nowrap">@f.FollowUpDate.ToString("dd MMM yyyy") @if (overdue) { <span class="badge bg-danger">Overdue</span> }</td>
+                        <td class="text-nowrap"><a asp-action="Details" asp-route-id="@f.Id">@f.FollowUpDate.ToString("dd MMM yyyy")</a> @if (overdue) { <span class="badge bg-danger">Overdue</span> }</td>
                         <td>@f.FollowUpType</td>
                         <td class="small">
                             @if (f.Customer is not null) { <div>Customer: <a asp-controller="Customers" asp-action="Details" asp-route-id="@f.CustomerId">@f.Customer.CustomerName</a></div> }
@@ -43,18 +57,8 @@ else
                         <td class="text-nowrap text-end">
                             @if (f.Status == "Planned")
                             {
-                                <form asp-action="SetStatus" asp-route-id="@f.Id" method="post" class="d-inline">
-                                    <input type="hidden" name="status" value="Completed" />
-                                    <button class="btn btn-sm btn-success">Complete</button>
-                                </form>
-                                <form asp-action="SetStatus" asp-route-id="@f.Id" method="post" class="d-inline">
-                                    <input type="hidden" name="status" value="Missed" />
-                                    <button class="btn btn-sm btn-outline-warning">Missed</button>
-                                </form>
-                                <form asp-action="SetStatus" asp-route-id="@f.Id" method="post" class="d-inline">
-                                    <input type="hidden" name="status" value="Cancelled" />
-                                    <button class="btn btn-sm btn-outline-secondary">Cancel</button>
-                                </form>
+                                <a asp-action="Edit" asp-route-id="@f.Id" class="btn btn-sm btn-outline-primary">Reschedule</a>
+                                <partial name="_StatusButtons" model="f" />
                             }
                         </td>
                     </tr>

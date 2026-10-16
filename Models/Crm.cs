@@ -110,10 +110,18 @@ public class Lead : IAssignable
     [Display(Name = "Assigned To")]
     public string? AssignedUserId { get; set; }
     public IdentityUser? AssignedUser { get; set; }
+
+    // Set by the Convert workflow; links the lead to the customer it became (new or existing).
+    [Display(Name = "Converted To")]
+    public int? ConvertedCustomerId { get; set; }
+    public Customer? ConvertedCustomer { get; set; }
+    [Display(Name = "Converted Date")]
+    public DateTime? ConvertedDate { get; set; }
 }
 
 public class Opportunity : IAssignable
 {
+    [Display(Name = "Opportunity Id")]
     public int Id { get; set; }
 
     [Required, StringLength(150, MinimumLength = 2), Display(Name = "Opportunity Name")]
@@ -156,6 +164,7 @@ public class Opportunity : IAssignable
 
 public class FollowUp : IAssignable
 {
+    [Display(Name = "Follow-up Id")]
     public int Id { get; set; }
 
     [Display(Name = "Customer")] public int? CustomerId { get; set; }
@@ -187,6 +196,7 @@ public class FollowUp : IAssignable
 
 public class Activity : IAssignable
 {
+    [Display(Name = "Activity Id")]
     public int Id { get; set; }
 
     [Required, StringLength(20), Display(Name = "Type")]
@@ -194,6 +204,9 @@ public class Activity : IAssignable
 
     [Required, StringLength(200, MinimumLength = 2)]
     public string Subject { get; set; } = string.Empty;
+
+    [StringLength(2000), DataType(DataType.MultilineText)]
+    public string? Description { get; set; }
 
     [Display(Name = "Activity Date"), DataType(DataType.Date)]
     public DateTime ActivityDate { get; set; } = DateTime.Today;

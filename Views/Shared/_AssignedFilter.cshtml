@@ -1,0 +1,17 @@
+@* "Assigned to" filter for list pages; only Admin/Manager get it (the server ignores it for others). *@
+@{
+    var users = ViewBag.FilterUsers as IEnumerable<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>;
+    var current = ViewData["AssignedTo"] as string;
+}
+@if (ViewBag.CanAssign == true && users is not null)
+{
+    <div class="col-md-3">
+        <select name="assignedTo" class="form-select" aria-label="Assigned to">
+            <option value="">Any assignee</option>
+            @foreach (var u in users)
+            {
+                <option value="@u.Value" selected="@(u.Value == current)">@u.Text</option>
+            }
+        </select>
+    </div>
+}

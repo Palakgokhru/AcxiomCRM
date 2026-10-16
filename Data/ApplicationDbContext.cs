@@ -27,7 +27,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             c.HasIndex(x => x.CustomerCode).IsUnique();
             c.HasIndex(x => x.Email).IsUnique();
             c.HasIndex(x => x.Phone).IsUnique();
-            c.HasIndex(x => new { x.CustomerName, x.CompanyName }).IsUnique();
+            // Name/company is deliberately NOT unique: two different people can share a name at one
+            // company. Normalised email and phone are the business identifiers.
             c.HasIndex(x => x.AssignedUserId);
 
             c.HasOne(x => x.AssignedUser).WithMany()
@@ -42,6 +43,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             l.HasIndex(x => x.LeadCode).IsUnique();
             l.HasIndex(x => x.AssignedUserId);
             l.HasOne(x => x.AssignedUser).WithMany().HasForeignKey(x => x.AssignedUserId).OnDelete(DeleteBehavior.SetNull);
+            l.HasOne(x => x.ConvertedCustomer).WithMany().HasForeignKey(x => x.ConvertedCustomerId).OnDelete(DeleteBehavior.SetNull);
         });
 
         builder.Entity<Opportunity>(o =>

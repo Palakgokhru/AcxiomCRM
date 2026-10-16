@@ -3,10 +3,11 @@
 <div class="card shadow-sm">
     <div class="card-body">
         <dl class="row mb-0">
-            <dt class="col-sm-3">Company</dt><dd class="col-sm-9">@Model.CompanyName</dd>
+            <dt class="col-sm-3">Customer Id</dt><dd class="col-sm-9">@Model.Id</dd>
+            <dt class="col-sm-3">Company</dt><dd class="col-sm-9">@(Model.CompanyName ?? "—")</dd>
             <dt class="col-sm-3">Email</dt><dd class="col-sm-9">@Model.Email</dd>
             <dt class="col-sm-3">Phone</dt><dd class="col-sm-9">@Model.Phone</dd>
-            <dt class="col-sm-3">Address</dt><dd class="col-sm-9">@Model.Address, @Model.City, @Model.State</dd>
+            <dt class="col-sm-3">Address</dt><dd class="col-sm-9">@(string.Join(", ", new[] { Model.Address, Model.City, Model.State }.Where(x => !string.IsNullOrWhiteSpace(x))) is var a && a.Length > 0 ? a : "—")</dd>
             <dt class="col-sm-3">Status</dt><dd class="col-sm-9">@Model.Status</dd>
             <dt class="col-sm-3">Assigned To</dt><dd class="col-sm-9">@(Model.AssignedUser?.UserName ?? "Unassigned")</dd>
             <dt class="col-sm-3">Created</dt><dd class="col-sm-9">@Model.CreatedDate.ToLocalTime().ToString("dd MMM yyyy HH:mm") by @Model.CreatedBy</dd>

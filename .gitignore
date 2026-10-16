@@ -489,3 +489,7 @@ app.db-wal
 # acceptance test cookie jars
 tests/*.txt
 app.db.bak*
+tests/test.db*
+tests/app-test.log
+tests/*.png
+tests/last-run.log

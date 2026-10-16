@@ -1,0 +1,104 @@
+@model ReportViewModel
+@{
+    ViewData["Title"] = Model.Title;
+    var csvRoute = Context.Request.Query.ToDictionary(k => k.Key, v => v.Value.ToString());
+    csvRoute["format"] = "csv";
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+    <div>
+        <h1 class="h3 mb-0">@Model.Title</h1>
+        <p class="text-muted small mb-0">@Model.Description</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="@(Context.GetRouteValue("action"))" asp-all-route-data="csvRoute" class="btn btn-outline-success">Export CSV</a>
+        <a asp-action="Index" class="btn btn-outline-secondary">All reports</a>
+    </div>
+</div>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-md-2">
+        <label class="form-label small mb-0">Period (@Model.DateFieldLabel)</label>
+        <select name="preset" class="form-select" id="preset">
+            @foreach (var (key, label) in DateRange.Presets)
+            {
+                <option value="@key" selected="@(key == Model.Range.Preset)">@label</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small mb-0" for="from">From</label>
+        <input type="date" name="from" id="from" class="form-control" value="@Model.Range.From?.ToString("yyyy-MM-dd")" />
+    </div>
+    <div class="col-md-2">
+        <label class="form-label small mb-0" for="to">To</label>
+        <input type="date" name="to" id="to" class="form-control" value="@Model.Range.To?.ToString("yyyy-MM-dd")" />
+    </div>
+    @foreach (var f in Model.Filters)
+    {
+        <div class="col-md-2">
+            <label class="form-label small mb-0">@f.Label</label>
+            <select name="@f.Name" class="form-select">
+                <option value="">Any</option>
+                @foreach (var (value, text) in f.Options)
+                {
+                    <option value="@value" selected="@(value == f.Selected)">@text</option>
+                }
+            </select>
+        </div>
+    }
+    <div class="col-md-2 d-flex gap-2">
+        <button class="btn btn-primary">Apply</button>
+        <a asp-action="@(Context.GetRouteValue("action"))" class="btn btn-outline-secondary">Reset</a>
+    </div>
+</form>
+<p class="small text-muted">Period: <strong>@Model.Range.Label</strong></p>
+
+@if (Model.Totals.Count > 0)
+{
+    <div class="row g-3 mb-3">
+        @foreach (var (label, value) in Model.Totals)
+        {
+            <div class="col-6 col-md-3">
+                <div class="card shadow-sm"><div class="card-body py-2">
+                    <div class="text-muted small">@label</div>
+                    <div class="fs-5 fw-semibold">@value</div>
+                </div></div>
+            </div>
+        }
+    </div>
+}
+
+@foreach (var t in Model.Tables)
+{
+    <h2 class="h6 mt-3">@t.Title</h2>
+    @if (t.Rows.Count == 0)
+    {
+        <div class="alert alert-light border small">No data for this period and filter.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-sm table-striped bg-white small">
+                <thead class="table-light">
+                    <tr>@for (var i = 0; i < t.Columns.Count; i++) { <th class="@(t.NumericColumns.Contains(i) ? "text-end" : "")">@t.Columns[i]</th> }</tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in t.Rows)
+                    {
+                        <tr>@for (var i = 0; i < row.Length; i++) { <td class="@(t.NumericColumns.Contains(i) ? "text-end" : "")">@row[i]</td> }</tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+}
+
+<script>
+    // Picking From/To switches the preset to Custom; picking a preset clears custom dates.
+    document.getElementById("from").addEventListener("change", () => document.getElementById("preset").value = "custom");
+    document.getElementById("to").addEventListener("change", () => document.getElementById("preset").value = "custom");
+    document.getElementById("preset").addEventListener("change", e => {
+        if (e.target.value !== "custom") { document.getElementById("from").value = ""; document.getElementById("to").value = ""; }
+    });
+</script>

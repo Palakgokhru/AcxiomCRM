@@ -23,7 +23,11 @@
         <select asp-for="Status" asp-items="new SelectList(ActivityStatus.All)" class="form-select"></select>
         <span asp-validation-for="Status" class="text-danger small"></span>
     </div>
-    <div class="w-100"></div>
+    <div class="col-12">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+        <span asp-validation-for="Description" class="text-danger small"></span>
+    </div>
     <partial name="_RelatedFields" model="(Model.CustomerId, Model.LeadId, Model.OpportunityId)" />
     <partial name="_AssignField" model="Model.AssignedUserId" />
 </div>

@@ -107,9 +107,31 @@ public class UsersController(UserManager<IdentityUser> userManager, ApplicationD
     }
 }
 
+// Audit log viewer: Admin only. Read-only (append-oriented): there are no edit/delete actions.
 [Authorize(Roles = Roles.Admin)]
 public class AuditLogController(ApplicationDbContext db) : Controller
 {
-    public async Task<IActionResult> Index() =>
-        View(await db.AuditLogs.OrderByDescending(a => a.CreatedDate).Take(500).ToListAsync());
+    public const int PageSize = 200;
+
+    public async Task<IActionResult> Index(string? user, string? entity, string? act, string? preset, DateTime? from, DateTime? to, int page = 1)
+    {
+        var range = AcxiomCRM.Models.DateRange.Resolve(preset, from, to);
+        var q = db.AuditLogs.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(user)) q = q.Where(a => a.UserName.ToLower().Contains(user.Trim().ToLower()));
+        if (!string.IsNullOrWhiteSpace(entity)) q = q.Where(a => a.EntityName == entity);
+        if (!string.IsNullOrWhiteSpace(act)) q = q.Where(a => a.Action == act);
+        if (range.From is DateTime f) q = q.Where(a => a.CreatedDate >= f);
+        if (range.ToExclusive is DateTime t) q = q.Where(a => a.CreatedDate < t);
+
+        page = Math.Max(1, page);
+        ViewBag.Total = await q.CountAsync();
+        ViewBag.Page = page;
+        ViewBag.Entities = await db.AuditLogs.Select(a => a.EntityName).Distinct().OrderBy(x => x).ToListAsync();
+        ViewBag.Actions = await db.AuditLogs.Select(a => a.Action).Distinct().OrderBy(x => x).ToListAsync();
+        ViewBag.Range = range;
+        ViewData["User"] = user;
+        ViewData["Entity"] = entity;
+        ViewData["Act"] = act;
+        return View(await q.OrderByDescending(a => a.CreatedDate).Skip((page - 1) * PageSize).Take(PageSize).ToListAsync());
+    }
 }

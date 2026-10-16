@@ -1,0 +1,12 @@
+@model FollowUp
+@* Complete / Missed / Cancel buttons for a Planned follow-up, each confirmed before posting. *@
+@{ var returnTo = ViewData["ReturnTo"] as string; }
+@foreach (var (status, label, css) in new[] { ("Completed", "Complete", "btn-success"), ("Missed", "Missed", "btn-outline-warning"), ("Cancelled", "Cancel", "btn-outline-secondary") })
+{
+    <form asp-controller="FollowUps" asp-action="SetStatus" asp-route-id="@Model.Id" method="post" class="d-inline"
+          onsubmit="return confirm('Mark this follow-up as @status?');">
+        <input type="hidden" name="status" value="@status" />
+        <input type="hidden" name="returnTo" value="@returnTo" />
+        <button class="btn btn-sm @css">@label</button>
+    </form>
+}
